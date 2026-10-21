@@ -1,0 +1,95 @@
+/* Yushan Labs — shared styles for every page */
+:root {
+  --bg: #f6f7f5;
+  --surface: #ffffff;
+  --ink: #1f2a2e;
+  --muted: #5d6b70;
+  --accent: #2f5d50;       /* 玉山松綠 */
+  --accent-soft: #e6efeb;
+  --line: #dfe4e1;
+  --radius: 14px;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #121615;
+    --surface: #1a201f;
+    --ink: #e6ebe9;
+    --muted: #9aa7a3;
+    --accent: #8cc4b0;
+    --accent-soft: #1f2e29;
+    --line: #2c3533;
+  }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 16px/1.8 -apple-system, BlinkMacSystemFont, "PingFang TC", "Hiragino Sans", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+}
+a { color: var(--accent); }
+a:hover { text-decoration-thickness: 2px; }
+
+/* Top bar */
+.topbar { border-bottom: 1px solid var(--line); background: var(--surface); }
+.topbar .inner { max-width: 760px; margin: 0 auto; padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.brand { display: flex; align-items: center; gap: 10px; color: var(--ink); text-decoration: none; font-weight: 650; letter-spacing: .02em; }
+.brand svg { width: 26px; height: 26px; flex: none; }
+.topbar nav { font-size: 14px; display: flex; gap: 16px; }
+.topbar nav a { color: var(--muted); text-decoration: none; }
+.topbar nav a[aria-current="page"], .topbar nav a:hover { color: var(--accent); }
+
+main { max-width: 760px; margin: 0 auto; padding: 36px 16px 64px; }
+
+/* App header */
+.app-head { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; }
+.app-head img, .app-head .icon-fallback { width: 64px; height: 64px; border-radius: 15px; border: 1px solid var(--line); flex: none; }
+.icon-fallback { display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); font-size: 28px; font-weight: 700; }
+h1 { font-size: 26px; line-height: 1.35; margin: 0; }
+.sub { color: var(--muted); font-size: 15px; margin: 2px 0 0; }
+h2 { font-size: 19px; margin: 36px 0 10px; }
+h3 { font-size: 16px; margin: 0 0 4px; }
+.meta { color: var(--muted); font-size: 14px; }
+
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px 20px; margin: 14px 0; }
+.card p:first-child { margin-top: 0; }
+.card p:last-child { margin-bottom: 0; }
+.highlight { background: var(--accent-soft); border-color: transparent; }
+.notice { border-left: 4px solid var(--accent); }
+
+ul, ol { padding-left: 1.3em; margin: 8px 0; }
+li { margin: 4px 0; }
+
+/* FAQ */
+details { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); margin: 10px 0; }
+summary { cursor: pointer; padding: 14px 18px; font-weight: 600; list-style: none; position: relative; padding-right: 44px; }
+summary::-webkit-details-marker { display: none; }
+summary::after { content: "+"; position: absolute; right: 18px; top: 12px; color: var(--muted); font-weight: 400; font-size: 20px; }
+details[open] summary::after { content: "−"; }
+details > div { padding: 0 18px 16px; }
+details > div p:first-child { margin-top: 0; }
+
+/* App list on the home page */
+.apps { display: grid; gap: 12px; margin-top: 20px; }
+.app-row { display: flex; align-items: center; gap: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; }
+.app-row img, .app-row .icon-fallback { width: 52px; height: 52px; border-radius: 12px; border: 1px solid var(--line); flex: none; }
+.app-row .icon-fallback { font-size: 22px; }
+.app-row .text { flex: 1; min-width: 0; }
+.app-row .name { font-weight: 650; }
+.app-row .desc { color: var(--muted); font-size: 14px; line-height: 1.6; }
+.app-row .links { display: flex; gap: 12px; font-size: 14px; white-space: nowrap; }
+@media (max-width: 520px) {
+  .app-row { flex-wrap: wrap; }
+  .app-row .links { width: 100%; padding-left: 66px; }
+}
+
+.hero { padding: 8px 0 4px; }
+.hero h1 { font-size: 30px; }
+.hero p { color: var(--muted); max-width: 36em; }
+
+footer { border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; }
+footer .inner { max-width: 760px; margin: 0 auto; padding: 20px 16px 36px; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; }
+footer a { color: var(--muted); }
+
+.mail { font-weight: 600; word-break: break-all; }
