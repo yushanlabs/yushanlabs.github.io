@@ -173,6 +173,15 @@ header p{max-width:62ch}
 .sharebtn{background:var(--mark);color:#fff;border:0;border-radius:999px;padding:12px 26px;font-size:16px;font-weight:600}
 .done h2{font-size:26px}
 
+/* 行事曆提醒 */
+.remind{display:flex;flex-direction:column;gap:8px;text-align:left;width:100%;max-width:440px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+.remind b{font-family:var(--display);font-size:16px}
+.remind p{font-size:13px;color:var(--muted)}
+.remind .acts{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.remind select{font:inherit;font-size:14px;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:6px 8px}
+.remind a{display:inline-block;border-radius:999px;padding:7px 14px;font-size:14px;font-weight:600;text-decoration:none;border:1px solid var(--accent);color:var(--accent)}
+.remind a.main{background:var(--accent);color:var(--on-accent)}
+.wrap>.remind{max-width:none}
 /* 推廣：記憶曲線單字 App */
 .promo{display:flex;gap:14px;align-items:center;text-align:left;width:100%;max-width:440px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;text-decoration:none;color:inherit}
 .promo img{width:60px;height:60px;border-radius:14px;flex:none}
@@ -205,6 +214,7 @@ header p{max-width:62ch}
   </header>
 
   <section id="installHome" hidden aria-label="加入主畫面"></section>
+  <section class="remind" id="remindHome" hidden aria-label="每天提醒"></section>
 
   <section class="today" aria-label="今天的練習">
     <div class="counts">
@@ -681,7 +691,7 @@ function showNext() {
     const later = q.learnLater.length ? state.cards[q.learnLater[0]] : null;
     stage.innerHTML = later
       ? `<div class="done"><h2>先休息一下</h2><p class="muted">還有 ${q.learnLater.length} 張學習中的卡片，${Math.max(1, Math.round((later.due - Date.now())/MIN))} 分鐘後會再出現。</p><button class="flipbtn" id="backHome">回首頁</button></div>`
-      : `<div class="done"><h2>今天完成了</h2><p class="muted">明天再回來，演算法會把快忘記的卡片排給你。</p>${installHTML()}<button class="flipbtn" id="backHome">回首頁</button>${promoHTML()}</div>`;
+      : `<div class="done"><h2>今天完成了</h2><p class="muted">明天再回來，演算法會把快忘記的卡片排給你。</p>${remindHTML()}${installHTML()}<button class="flipbtn" id="backHome">回首頁</button>${promoHTML()}</div>`;
     if (later) studyTimer = setTimeout(showNext, Math.max(5000, later.due - Date.now() - 20*MIN + 1000));
     return;
   }
@@ -730,7 +740,7 @@ document.addEventListener("keydown", e => {
   else if (e.key === "Escape") closeStudy();
 });
 function openStudy() { $("study").hidden = false; document.body.style.overflow = "hidden"; lastCode = null; showNext(); }
-function closeStudy() { clearTimeout(studyTimer); $("study").hidden = true; document.body.style.overflow = ""; current = null; renderHome(); renderInstallHome(); }
+function closeStudy() { clearTimeout(studyTimer); $("study").hidden = true; document.body.style.overflow = ""; current = null; renderHome(); renderInstallHome(); renderRemindHome(); }
 $("startBtn").addEventListener("click", openStudy);
 $("closeBtn").addEventListener("click", closeStudy);
 
@@ -807,6 +817,7 @@ function endQuiz() {
       <p class="muted small" id="shareMsg"></p>
       <div class="row"><button class="flipbtn" id="quizAgain" style="width:auto;padding-inline:24px">再玩一次</button><button class="ghost" id="quizHome">回首頁</button></div>
       <p class="muted small">想讓分數變高？每天用首頁的翻牌練幾張，FSRS 會幫你記住。</p>
+      ${remindHTML()}
       ${promoHTML()}
       ${installHTML()}
     </div>`;
@@ -895,7 +906,7 @@ quizStage.addEventListener("click", e => {
   if (e.target.closest("#quizHome")) return closeQuiz();
   handleInstallClick(e);
 });
-function closeQuiz() { if (qz) { qz.over = true; clearInterval(qz.raf); } qz = null; $("quiz").hidden = true; document.body.style.overflow = ""; renderHome(); renderBoard(); renderInstallHome(); }
+function closeQuiz() { if (qz) { qz.over = true; clearInterval(qz.raf); } qz = null; $("quiz").hidden = true; document.body.style.overflow = ""; renderHome(); renderBoard(); renderInstallHome(); renderRemindHome(); }
 $("quizBtn").addEventListener("click", startQuiz);
 $("quizClose").addEventListener("click", closeQuiz);
 document.addEventListener("keydown", e => {
@@ -903,6 +914,51 @@ document.addEventListener("keydown", e => {
   if (["1","2","3","4"].includes(e.key)) answer(+e.key - 1);
   else if (e.key === "Escape") closeQuiz();
 });
+
+// ---------- 行事曆提醒 ----------
+const REMIND_TIMES = [["0730","早上 7:30"],["1230","中午 12:30"],["1800","傍晚 6:00"],["2100","晚上 9:00"]];
+function remindLinks(t) {
+  const h = +t.slice(0,2), m = +t.slice(2) + 10;
+  const end = String(h + Math.floor(m/60)).padStart(2,"0") + String(m % 60).padStart(2,"0");
+  const day = new Date(Date.now() + DAY), ymd = `${day.getFullYear()}${String(day.getMonth()+1).padStart(2,"0")}${String(day.getDate()).padStart(2,"0")}`;
+  const g = "https://calendar.google.com/calendar/render?action=TEMPLATE"
+    + "&text=" + encodeURIComponent("首都翻牌：今天的複習")
+    + "&dates=" + ymd + "T" + t + "00/" + ymd + "T" + end + "00"
+    + "&recur=" + encodeURIComponent("RRULE:FREQ=DAILY")
+    + "&details=" + encodeURIComponent("花 5 分鐘翻幾張首都卡，FSRS 會把快忘記的排給你。\n" + SITE_URL);
+  return {ics: `remind-${t}.ics`, google: g};
+}
+function remindHTML() {
+  if (lsGet("capitals-remind-hide") === "1") return "";
+  const t = lsGet("capitals-remind-time") || "2100", L = remindLinks(t);
+  const appleFirst = !isAndroid;
+  const apple = `<a class="${appleFirst ? "main" : ""}" data-remind="ics" href="${L.ics}">${isIOS ? "加到 iPhone 行事曆" : "Apple／Outlook 行事曆"}</a>`;
+  const google = `<a class="${appleFirst ? "" : "main"}" data-remind="google" href="${L.google}" target="_blank" rel="noopener">Google 日曆</a>`;
+  return `<div class="remind">
+    <b>每天提醒我回來練</b>
+    <p>在手機行事曆加一個每天重複的提醒，時間到點一下就回到這裡。不需要註冊，也不會收集任何資料。</p>
+    <div class="acts">
+      <select data-remind="time" aria-label="提醒時間">${REMIND_TIMES.map(([v,n]) => `<option value="${v}"${v===t?" selected":""}>${n}</option>`).join("")}</select>
+      ${appleFirst ? apple + google : google + apple}
+    </div></div>`;
+}
+document.addEventListener("change", e => {
+  const sel = e.target.closest('select[data-remind="time"]'); if (!sel) return;
+  lsSet("capitals-remind-time", sel.value);
+  const L = remindLinks(sel.value), box = sel.closest(".remind");
+  box.querySelector('[data-remind="ics"]').href = L.ics;
+  box.querySelector('[data-remind="google"]').href = L.google;
+});
+document.addEventListener("click", e => {
+  if (e.target.closest('a[data-remind]')) { lsSet("capitals-remind-done", "1"); setTimeout(renderRemindHome, 500); }
+});
+function renderRemindHome() {
+  const box = $("remindHome");
+  const engaged = state.startedAt || history().length;
+  const html = engaged && lsGet("capitals-remind-done") !== "1" ? remindHTML() : "";
+  box.innerHTML = html ? html.replace('<div class="remind">', '').replace(/<\/div>$/, "") : "";
+  box.hidden = !html;
+}
 
 // ---------- 推廣：記憶曲線單字 ----------
 const APP_URL = "https://apps.apple.com/tw/app/id6821861109";
@@ -979,6 +1035,7 @@ document.addEventListener("visibilitychange", () => { if (!document.hidden && $(
 renderHome();
 renderBoard();
 renderInstallHome();
+renderRemindHome();
 })();
 </script>
 </body>
