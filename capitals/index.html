@@ -270,6 +270,7 @@ header p{max-width:62ch}
 
   <div id="regions" style="display:flex;flex-direction:column;gap:28px"></div>
 
+  <section id="installLow" hidden aria-label="加入主畫面"></section>
   <section class="remind" id="remindHome" hidden aria-label="每天提醒"></section>
 
   <div id="resetBox"><button class="reset" id="resetBtn">清除我的進度</button></div>
@@ -1007,27 +1008,35 @@ function installSteps() {
   if (isAndroid) return "點瀏覽器右上角的「⋮」選單，選「加到主畫面」或「安裝應用程式」。";
   return "";
 }
-function installHTML(withHide) {
+function installHTML(withHide, first) {
   if (isStandalone()) return "";
   const steps = installSteps(); if (!steps) return "";
   const btns = (deferredPrompt ? `<button class="go" data-install="go">加入主畫面</button>` : "")
     + (withHide ? `<button data-install="hide">不用了</button>` : "");
+  const lead = first
+    ? (isIOS
+      ? "要跟朋友比賽的話，請先加到主畫面，再從主畫面的圖示開始玩。iPhone 在 Safari 練的進度，不會跟到主畫面。"
+      : "要跟朋友比賽的話，建議先加到主畫面再開始玩，之後每天一點就能練。")
+    : "FSRS 要隔幾天回來複習才有效。放在主畫面，每天一點就能練，不用再找網址。";
   return `<div class="install">
     <img src="apple-touch-icon.png" alt="">
     <div class="txt">
-      <b>把首都翻牌放到主畫面</b>
-      <p>FSRS 要隔幾天回來複習才有效。放在主畫面，每天一點就能練，不用再找網址。</p>
+      <b>${first ? "開始之前：先加到主畫面" : "把首都翻牌放到主畫面"}</b>
+      <p>${lead}</p>
       <p>${steps}</p>
-      ${isIOS ? `<p class="small">提醒：Safari 和主畫面的進度是分開存的，建議加入後從主畫面開始練。</p>` : ""}
+      ${isIOS && !first ? `<p class="small">提醒：Safari 和主畫面的進度是分開存的，建議加入後從主畫面開始練。</p>` : ""}
       ${btns ? `<div class="acts">${btns}</div>` : ""}
     </div></div>`;
 }
 function renderInstallHome() {
-  const box = $("installHome");
-  // 第一次來先別打擾；開始練過或玩過一次後才在首頁提醒
+  const top = $("installHome"), low = $("installLow");
   const engaged = state.startedAt || history().length;
-  const html = engaged && lsGet("capitals-install-hide") !== "1" ? installHTML(true) : "";
-  box.innerHTML = html; box.hidden = !html;
+  const mobile = isIOS || isAndroid || inApp;
+  // 手機第一次來、還沒開始練：放最上面；開始練之後：移到下面，可以按「不用了」
+  const topHTML = mobile && !engaged ? installHTML(false, true) : "";
+  const lowHTML = engaged && lsGet("capitals-install-hide") !== "1" ? installHTML(true, false) : "";
+  top.innerHTML = topHTML; top.hidden = !topHTML;
+  low.innerHTML = lowHTML; low.hidden = !lowHTML;
 }
 async function handleInstallClick(e) {
   const b = e.target.closest("[data-install]"); if (!b) return false;
@@ -1041,6 +1050,7 @@ async function handleInstallClick(e) {
   return true;
 }
 $("installHome").addEventListener("click", handleInstallClick);
+$("installLow").addEventListener("click", handleInstallClick);
 
 // 過午夜（早上 4 點）或學習中的卡片到期時，首頁數字跟著更新
 setInterval(() => { if ($("study").hidden) renderHome(); }, 60e3);
