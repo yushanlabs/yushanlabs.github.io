@@ -227,7 +227,7 @@ header p{max-width:62ch}
 
   <section class="how" aria-label="怎麼測">
     <div><h3>先猜，再翻</h3><p>看到國名先試著想首都。想不起來也沒關係，努力想的那幾秒，記憶最會長。</p></div>
-    <div><h3>老實按</h3><p>完全不知道按「忘了」，一分鐘後會再出現；想很久才想到按「模糊」；馬上想到按「記得」或「秒答」。</p></div>
+    <div><h3>老實按</h3><p>沒學過或想不起來，都按「不會／忘了」，一分鐘後會再出現；想很久才想到按「模糊」；馬上想到按「記得」或「秒答」。</p></div>
     <div><h3>隔天再回來</h3><p>新卡第一次答對，大約 1 到 3 天後才會再考。每答對一次，下次就隔得更久。</p></div>
   </section>
 
@@ -698,7 +698,7 @@ function renderCard() {
     const p = preview(card, now);
     html += `<div class="answer"><span class="capital">${c.cap}</span><span class="en">${c.en}</span>${c.note ? `<span class="note">${c.note}</span>` : ""}</div></div>
       <div class="rates">
-        <button class="r1" data-g="1"><b>忘了</b><span>${fmtGap(p[0], now)}</span></button>
+        <button class="r1" data-g="1"><b>不會／忘了</b><span>${fmtGap(p[0], now)}</span></button>
         <button class="r2" data-g="2"><b>模糊</b><span>${fmtGap(p[1], now)}</span></button>
         <button class="r3" data-g="3"><b>記得</b><span>${fmtGap(p[2], now)}</span></button>
         <button class="r4" data-g="4"><b>秒答</b><span>${fmtGap(p[3], now)}</span></button>
