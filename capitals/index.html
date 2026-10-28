@@ -926,18 +926,19 @@ function remindLinks(t) {
     + "&dates=" + ymd + "T" + t + "00/" + ymd + "T" + end + "00"
     + "&recur=" + encodeURIComponent("RRULE:FREQ=DAILY")
     + "&details=" + encodeURIComponent("花 5 分鐘翻幾張首都卡，FSRS 會把快忘記的排給你。\n" + SITE_URL);
-  return {ics: `remind-${t}.ics`, google: g};
+  return {ics: SITE_URL + `remind-${t}.ics`, google: g};
 }
 function remindHTML() {
   if (lsGet("capitals-remind-hide") === "1") return "";
   const t = lsGet("capitals-remind-time") || "2100", L = remindLinks(t);
   const appleFirst = !isAndroid;
-  const apple = `<a class="${appleFirst ? "main" : ""}" data-remind="ics" href="${L.ics}">${isIOS ? "加到 iPhone 行事曆" : "Apple／Outlook 行事曆"}</a>`;
+  const apple = `<a class="${appleFirst ? "main" : ""}" data-remind="ics" href="${L.ics}" target="_blank" rel="noopener">${isIOS ? "加到 iPhone 行事曆" : "Apple／Outlook 行事曆"}</a>`;
   const google = `<a class="${appleFirst ? "" : "main"}" data-remind="google" href="${L.google}" target="_blank" rel="noopener">Google 日曆</a>`;
   return `<div class="remind">
     <b>每天提醒我回來練</b>
     <p>在手機行事曆加一個每天重複的提醒，時間到點一下就回到這裡。不需要註冊，也不會收集任何資料。</p>
-    <div class="acts">
+    ${inApp ? `<p><b style="font-size:14px">請先用 Safari 或手機瀏覽器開啟這個網頁</b>：現在是在 LINE、Facebook 之類的 App 裡面開的，沒辦法加到行事曆。點右上角選單，選「用 Safari 開啟」或「用瀏覽器開啟」。</p>` : ""}
+    <div class="acts"${inApp ? " hidden" : ""}>
       <select data-remind="time" aria-label="提醒時間">${REMIND_TIMES.map(([v,n]) => `<option value="${v}"${v===t?" selected":""}>${n}</option>`).join("")}</select>
       ${appleFirst ? apple + google : google + apple}
     </div></div>`;
