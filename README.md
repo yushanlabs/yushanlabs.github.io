@@ -9,3 +9,7 @@ Yushan Labs 各個 App 的技術支援與隱私權政策網站（GitHub Pages）
 | 加減記 | /ledger/support/ | /ledger/privacy/ |
 | 個人健康日記 | /health/support/ | /health/privacy/ |
 | 台語字卡 | /taigi/support/ | /taigi/privacy/ |
+
+## 其他頁面
+
+- 首都翻牌（FSRS 背 195 國首都＋60 秒快問快答）：/capitals/

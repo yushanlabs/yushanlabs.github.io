@@ -1,0 +1,962 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>首都翻牌</title>
+<meta name="description" content="你能多久背完 195 個首都？用 FSRS 記憶排程每天翻幾張，還有 60 秒快問快答。">
+<meta property="og:title" content="首都翻牌：60 秒你能答對幾個首都？">
+<meta property="og:description" content="用 FSRS 記憶排程背完 195 個首都，還有 60 秒快問快答。">
+<meta property="og:image" content="https://yushanlabs.github.io/capitals/icon-512.png">
+<meta property="og:url" content="https://yushanlabs.github.io/capitals/">
+<meta name="theme-color" content="#1D5D71">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="首都翻牌">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@600;700&family=Spectral:ital,wght@0,500;1,400&display=swap">
+<style>
+/* Layout: 地圖集索引——上方今天的狀態與開始按鈕，下方依洲分組的國家格子；練習時整頁換成一張大卡片 */
+:root{
+  --bg:#EFF2EE; --surface:#FAFBF8; --fg:#1B292D; --muted:#5A696B; --line:#D2D9D3;
+  --accent:#1D5D71; --accent-soft:#DCE8EA; --on-accent:#FFFFFF;
+  --mark:#A8740F; --again:#A9432F; --good:#2F6B45;
+  --display:"Noto Serif TC","Songti TC","PMingLiU",serif;
+  --latin:"Spectral",Georgia,"Times New Roman",serif;
+  --body:-apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#111819; --surface:#182224; --fg:#E2EAE7; --muted:#97A6A6; --line:#2C3A3C;
+    --accent:#7DB5C6; --accent-soft:#1F3439; --on-accent:#0E1A1D;
+    --mark:#DDAA4E; --again:#E07A64; --good:#79BE8F; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#111819; --surface:#182224; --fg:#E2EAE7; --muted:#97A6A6; --line:#2C3A3C;
+  --accent:#7DB5C6; --accent-soft:#1F3439; --on-accent:#0E1A1D;
+  --mark:#DDAA4E; --again:#E07A64; --good:#79BE8F; color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.6;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-top:calc(24px + env(safe-area-inset-top,0px));padding-bottom:calc(48px + env(safe-area-inset-bottom,0px))}
+.wrap{max-width:980px;margin:0 auto;display:flex;flex-direction:column;gap:28px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;font-weight:700}
+h1{font-size:clamp(30px,6vw,44px);letter-spacing:.02em;line-height:1.2}
+h2{font-size:20px}
+p{margin:0}
+.muted{color:var(--muted)}
+.eyebrow{font-size:12px;letter-spacing:.12em;color:var(--muted)}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,.tile:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+header{display:flex;flex-direction:column;gap:10px}
+header p{max-width:62ch}
+
+.today{display:grid;grid-template-columns:1fr auto;gap:20px;align-items:center;background:var(--surface);
+  border:1px solid var(--line);border-radius:14px;padding:20px}
+.counts{display:flex;flex-wrap:wrap;gap:24px}
+.count{display:flex;flex-direction:column;min-width:0}
+.count b{font-family:var(--latin);font-size:30px;font-weight:500;line-height:1.1;font-variant-numeric:tabular-nums}
+.count span{font-size:13px;color:var(--muted)}
+.count.due b{color:var(--mark)}
+.start{background:var(--accent);color:var(--on-accent);border:0;border-radius:999px;padding:14px 28px;font-size:16px;font-weight:600;white-space:nowrap}
+.start:disabled{opacity:.45;cursor:default}
+.today .foot{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px 20px;align-items:center;font-size:13px;color:var(--muted);
+  border-top:1px solid var(--line);padding-top:14px}
+.today select{font:inherit;font-size:13px;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:3px 6px}
+.sync::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--muted);margin-right:6px;vertical-align:1px}
+@media (max-width:560px){.today{grid-template-columns:1fr}.start{width:100%}}
+
+/* 加入主畫面提醒 */
+.install{display:flex;gap:14px;align-items:flex-start;background:var(--surface);border:1px solid var(--accent);border-radius:14px;padding:16px}
+.install img{width:52px;height:52px;border-radius:12px;flex:none}
+.install .txt{display:flex;flex-direction:column;gap:4px;min-width:0;flex:1}
+.install b{font-family:var(--display);font-size:17px}
+.install p{font-size:14px;color:var(--muted)}
+.install .acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.install .acts button{border-radius:999px;padding:7px 16px;font-size:14px;border:1px solid var(--line);background:none}
+.install .acts .go{background:var(--accent);color:var(--on-accent);border-color:var(--accent);font-weight:600}
+.done .install{text-align:left;width:100%;max-width:440px}
+
+.how{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
+.how div{display:flex;flex-direction:column;gap:4px;min-width:0}
+.how h3{font-size:16px}
+.how p{font-size:14px;color:var(--muted)}
+@media (max-width:700px){.how{grid-template-columns:1fr}}
+
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:13px;color:var(--muted)}
+.legend i{display:inline-block;width:18px;height:5px;border-radius:3px;margin-right:6px;vertical-align:2px}
+
+.region{display:flex;flex-direction:column;gap:12px}
+.region-head{display:flex;align-items:baseline;gap:12px;border-bottom:1px solid var(--line);padding-bottom:6px}
+.region-head span{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.tile{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px 14px;text-align:left;
+  display:flex;flex-direction:column;gap:2px;min-height:76px;min-width:0;overflow:hidden}
+.tile .flag{font-size:20px;line-height:1}
+.tile .name{font-weight:600;font-size:14px;line-height:1.35}
+.tile .cap{font-family:var(--display);font-size:15px;color:var(--accent);line-height:1.35}
+.tile .when{font-size:12px;color:var(--muted)}
+.tile .bar{position:absolute;left:0;right:0;bottom:0;height:4px;background:var(--line)}
+.tile .bar i{display:block;height:100%}
+.tile.open{border-color:var(--accent)}
+
+.reset{align-self:flex-start;background:none;border:1px solid var(--line);border-radius:8px;padding:6px 12px;font-size:13px;color:var(--muted)}
+.confirm{display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-size:14px}
+.confirm button{border-radius:8px;padding:6px 12px;font-size:13px;border:1px solid var(--line);background:var(--surface)}
+.confirm .danger{background:var(--again);color:#fff;border-color:var(--again)}
+.sitefoot{font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:14px}
+.sitefoot a{color:inherit}
+
+/* 練習畫面 */
+.study{position:fixed;inset:0;background:var(--bg);z-index:20;display:flex;flex-direction:column;overflow-y:auto;
+  padding:calc(16px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) calc(16px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.study-top{display:flex;justify-content:space-between;align-items:center;gap:12px;max-width:640px;width:100%;margin:0 auto}
+.queue{display:flex;gap:14px;font-size:13px;font-variant-numeric:tabular-nums}
+.queue b{font-weight:600}
+.q-new b{color:var(--accent)} .q-learn b{color:var(--again)} .q-rev b{color:var(--mark)}
+.close{background:none;border:1px solid var(--line);border-radius:999px;padding:6px 14px;font-size:14px}
+.stage{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:20px;max-width:640px;width:100%;margin:0 auto;min-height:0;padding-block:12px}
+.card{width:100%;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:36px 24px;min-height:300px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;cursor:pointer;
+  box-shadow:0 10px 30px -18px rgba(0,0,0,.35)}
+.card .flag{font-size:56px;line-height:1}
+.card .country{font-family:var(--display);font-size:clamp(26px,6vw,36px)}
+.card .tag{font-size:12px;letter-spacing:.12em;color:var(--muted)}
+.card .q{font-size:15px;color:var(--muted)}
+.card .answer{display:flex;flex-direction:column;gap:4px;align-items:center;border-top:1px solid var(--line);padding-top:14px;margin-top:6px;width:100%}
+.card .answer .capital{font-family:var(--display);font-size:clamp(30px,8vw,46px);color:var(--accent);line-height:1.2}
+.card .answer .en{font-family:var(--latin);font-style:italic;font-size:19px;color:var(--muted)}
+.card .answer .note{font-size:13px;color:var(--muted);max-width:40ch}
+.hint{font-size:13px;color:var(--muted)}
+.rates{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;width:100%}
+.rates button{border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:10px 4px;display:flex;flex-direction:column;align-items:center;gap:2px}
+.rates button b{font-size:15px}
+.rates button span{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.rates .r1 b{color:var(--again)} .rates .r2 b{color:var(--mark)} .rates .r3 b{color:var(--good)} .rates .r4 b{color:var(--accent)}
+.flipbtn{width:100%;background:var(--accent);color:var(--on-accent);border:0;border-radius:12px;padding:14px;font-size:16px;font-weight:600}
+.done{display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;width:100%}
+.lead{font-family:var(--display);font-size:clamp(18px,3.5vw,22px);color:var(--accent)}
+.small{font-size:13px}
+.quizbox{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px;background:var(--accent-soft);border-radius:14px;padding:22px}
+.quiz-intro{display:flex;flex-direction:column;gap:10px;align-items:flex-start;min-width:0}
+.board{min-width:0;display:flex;flex-direction:column;gap:8px}
+.board h3{font-size:16px}
+.board ol{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:2px;counter-reset:rk}
+.board li{display:grid;grid-template-columns:2em minmax(0,1fr) auto;gap:8px;align-items:baseline;padding:5px 8px;border-radius:8px;font-variant-numeric:tabular-nums}
+.board li:not(.empty)::before{counter-increment:rk;content:counter(rk);color:var(--muted);font-family:var(--latin)}
+.board li.empty{display:block}
+.board li .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.board li b{font-family:var(--latin);font-weight:500;font-size:17px}
+.board li.me{background:var(--surface)}
+@media (max-width:700px){.quizbox{grid-template-columns:1fr}}
+.timebar{max-width:640px;width:100%;margin:10px auto 0;height:4px;background:var(--line);border-radius:2px;overflow:hidden;flex:none}
+.timebar i{display:block;height:100%;background:var(--accent);width:100%}
+.opts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;width:100%}
+.opts button{border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:16px 10px;font-family:var(--display);font-size:18px;min-height:64px}
+.opts button.right{background:var(--good);border-color:var(--good);color:#fff}
+.opts button.wrong{background:var(--again);border-color:var(--again);color:#fff}
+.bigscore{font-family:var(--latin);font-size:72px;line-height:1;color:var(--accent)}
+.row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.ghost{background:none;border:1px solid var(--line);border-radius:999px;padding:10px 18px}
+.sharebtn{background:var(--mark);color:#fff;border:0;border-radius:999px;padding:12px 26px;font-size:16px;font-weight:600}
+.done h2{font-size:26px}
+
+/* 沒辦法直接分享時，顯示圖片讓人長按儲存 */
+.sheet{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;
+  padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px))}
+.sheet .box{background:var(--surface);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:12px;align-items:center;max-width:420px;width:100%;max-height:100%;overflow:auto}
+.sheet img{width:100%;border-radius:10px;border:1px solid var(--line)}
+.sheet a{color:var(--accent);font-weight:600}
+@media (prefers-reduced-motion:no-preference){
+  .card{transition:transform .18s ease}
+  .card.flip{animation:flip .28s ease}
+  @keyframes flip{0%{transform:rotateX(0)}50%{transform:rotateX(80deg)}100%{transform:rotateX(0)}}
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <span class="eyebrow">首都翻牌・FSRS 記憶排程實驗</span>
+    <h1>你能多久背完 195 個首都？</h1>
+    <p class="lead">來體驗 FSRS 的威力。</p>
+    <p class="muted">想知道間隔重複有沒有用，最好的測法是學一樣你完全不知道的東西。每天只翻幾張新卡，FSRS 會在你快忘記的時候把它排回來。不用熬夜狂背，看看自己幾天能把 195 個首都全部記住。</p>
+  </header>
+
+  <section id="installHome" hidden aria-label="加入主畫面"></section>
+
+  <section class="today" aria-label="今天的練習">
+    <div class="counts">
+      <div class="count due"><b id="nDue">0</b><span>今天要複習</span></div>
+      <div class="count"><b id="nNew">0</b><span>今天的新卡</span></div>
+      <div class="count"><b id="nSeen">0</b><span>已記住／195</span></div>
+      <div class="count"><b id="nDay">—</b><span>第幾天</span></div>
+      <div class="count"><b id="nRecall">—</b><span>預估現在記得</span></div>
+    </div>
+    <button class="start" id="startBtn">開始練習</button>
+    <div class="foot">
+      <label>每天新卡
+        <select id="newPerDay"><option value="5">5 張</option><option value="10">10 張</option><option value="20">20 張</option></select>
+      </label>
+      <label>新卡範圍
+        <select id="regionSel"></select>
+      </label>
+      <span class="sync">進度存在這支手機（這個瀏覽器）</span>
+    </div>
+  </section>
+
+  <section class="how" aria-label="怎麼測">
+    <div><h3>先猜，再翻</h3><p>看到國名先試著想首都。想不起來也沒關係，努力想的那幾秒，記憶最會長。</p></div>
+    <div><h3>老實按</h3><p>完全不知道按「忘了」，一分鐘後會再出現；想很久才想到按「模糊」；馬上想到按「記得」或「秒答」。</p></div>
+    <div><h3>隔天再回來</h3><p>新卡第一次答對，大約 1 到 3 天後才會再考。每答對一次，下次就隔得更久。</p></div>
+  </section>
+
+  <section class="quizbox" aria-label="快問快答">
+    <div class="quiz-intro">
+      <span class="eyebrow">快問快答</span>
+      <h2>60 秒，你能答對幾個首都？</h2>
+      <p class="muted">四選一，答錯不扣分，但會浪費時間。玩完可以把成績圖分享給朋友，過幾天練完再回來刷新紀錄。</p>
+      <button class="start" id="quizBtn">開始 60 秒挑戰</button>
+      <p class="muted small" id="myBest"></p>
+    </div>
+    <div class="board">
+      <h3>我的最佳紀錄</h3>
+      <ol id="board"><li class="muted empty">還沒有紀錄，玩一次就會出現在這裡。</li></ol>
+    </div>
+  </section>
+
+  <div class="legend" aria-label="格子底線的意思">
+    <span><i style="background:var(--line)"></i>還沒學</span>
+    <span><i style="background:var(--again)"></i>今天學習中</span>
+    <span><i style="background:var(--mark)"></i>記得不久</span>
+    <span><i style="background:var(--accent)"></i>記得很久</span>
+  </div>
+
+  <div id="regions" style="display:flex;flex-direction:column;gap:28px"></div>
+
+  <div id="resetBox"><button class="reset" id="resetBtn">清除我的進度</button></div>
+
+  <p class="sitefoot">首都翻牌・<a href="../">Yushan Labs</a>・不收集任何資料，進度只存在你的裝置上。</p>
+</div>
+
+<div class="study" id="study" hidden>
+  <div class="study-top">
+    <div class="queue" aria-label="剩下的卡片">
+      <span class="q-new">新 <b id="qNew">0</b></span>
+      <span class="q-learn">學習中 <b id="qLearn">0</b></span>
+      <span class="q-rev">複習 <b id="qRev">0</b></span>
+    </div>
+    <button class="close" id="closeBtn">結束</button>
+  </div>
+  <div class="stage" id="stage"></div>
+</div>
+
+<div class="study" id="quiz" hidden>
+  <div class="study-top">
+    <div class="queue"><span>答對 <b id="qzScore">0</b></span><span class="muted">剩 <b id="qzTime">60</b> 秒</span></div>
+    <button class="close" id="quizClose">結束</button>
+  </div>
+  <div class="timebar"><i id="qzBar"></i></div>
+  <div class="stage" id="quizStage"></div>
+</div>
+
+<div class="sheet" id="sheet" hidden></div>
+
+<script>
+(() => {
+// ---------- 資料：代碼|國家|首都|英文|洲|備註 ----------
+const RAW = `AF|阿富汗|喀布爾|Kabul|as|
+AM|亞美尼亞|葉里溫|Yerevan|as|
+AZ|亞塞拜然|巴庫|Baku|as|
+BH|巴林|麥納瑪|Manama|as|
+BD|孟加拉|達卡|Dhaka|as|
+BT|不丹|辛布|Thimphu|as|
+BN|汶萊|斯里巴卡旺|Bandar Seri Begawan|as|
+KH|柬埔寨|金邊|Phnom Penh|as|
+CN|中國|北京|Beijing|as|
+CY|賽普勒斯|尼古西亞|Nicosia|as|
+GE|喬治亞|提比里斯|Tbilisi|as|
+IN|印度|新德里|New Delhi|as|
+ID|印尼|雅加達|Jakarta|as|新首都努山達拉正在興建
+IR|伊朗|德黑蘭|Tehran|as|
+IQ|伊拉克|巴格達|Baghdad|as|
+IL|以色列|耶路撒冷|Jerusalem|as|國際上有爭議，多數國家的大使館設在特拉維夫
+JP|日本|東京|Tokyo|as|
+JO|約旦|安曼|Amman|as|
+KZ|哈薩克|阿斯塔納|Astana|as|2019 到 2022 年曾改名努爾蘇丹
+KW|科威特|科威特市|Kuwait City|as|
+KG|吉爾吉斯|比斯凱克|Bishkek|as|
+LA|寮國|永珍|Vientiane|as|
+LB|黎巴嫩|貝魯特|Beirut|as|
+MY|馬來西亞|吉隆坡|Kuala Lumpur|as|多數聯邦政府機關在布城
+MV|馬爾地夫|馬列|Malé|as|
+MN|蒙古|烏蘭巴托|Ulaanbaatar|as|
+MM|緬甸|奈比多|Naypyidaw|as|2005 年從仰光遷過來
+NP|尼泊爾|加德滿都|Kathmandu|as|
+KP|北韓|平壤|Pyongyang|as|
+OM|阿曼|馬斯開特|Muscat|as|
+PK|巴基斯坦|伊斯蘭馬巴德|Islamabad|as|最大城市是喀拉蚩
+PH|菲律賓|馬尼拉|Manila|as|
+QA|卡達|杜哈|Doha|as|
+SA|沙烏地阿拉伯|利雅德|Riyadh|as|
+SG|新加坡|新加坡|Singapore|as|城市國家
+KR|南韓|首爾|Seoul|as|
+LK|斯里蘭卡|斯里賈亞瓦德納普拉科特|Sri Jayawardenepura Kotte|as|最大城市是可倫坡
+SY|敘利亞|大馬士革|Damascus|as|
+TW|臺灣|臺北|Taipei|as|
+TJ|塔吉克|杜尚別|Dushanbe|as|
+TH|泰國|曼谷|Bangkok|as|
+TL|東帝汶|帝力|Dili|as|
+TR|土耳其|安卡拉|Ankara|as|最大城市是伊斯坦堡
+TM|土庫曼|阿什哈巴德|Ashgabat|as|
+AE|阿拉伯聯合大公國|阿布達比|Abu Dhabi|as|
+UZ|烏茲別克|塔什干|Tashkent|as|
+VN|越南|河內|Hanoi|as|
+YE|葉門|沙那|Sanaa|as|內戰中，國際承認的政府暫設在亞丁
+AL|阿爾巴尼亞|地拉那|Tirana|eu|
+AD|安道爾|安道爾城|Andorra la Vella|eu|
+AT|奧地利|維也納|Vienna|eu|
+BY|白俄羅斯|明斯克|Minsk|eu|
+BE|比利時|布魯塞爾|Brussels|eu|
+BA|波士尼亞與赫塞哥維納|塞拉耶佛|Sarajevo|eu|
+BG|保加利亞|索菲亞|Sofia|eu|
+HR|克羅埃西亞|札格雷布|Zagreb|eu|
+CZ|捷克|布拉格|Prague|eu|
+DK|丹麥|哥本哈根|Copenhagen|eu|
+EE|愛沙尼亞|塔林|Tallinn|eu|
+FI|芬蘭|赫爾辛基|Helsinki|eu|
+FR|法國|巴黎|Paris|eu|
+DE|德國|柏林|Berlin|eu|
+GR|希臘|雅典|Athens|eu|
+HU|匈牙利|布達佩斯|Budapest|eu|
+IS|冰島|雷克雅維克|Reykjavík|eu|
+IE|愛爾蘭|都柏林|Dublin|eu|
+IT|義大利|羅馬|Rome|eu|
+LV|拉脫維亞|里加|Riga|eu|
+LI|列支敦斯登|瓦都茲|Vaduz|eu|
+LT|立陶宛|維爾紐斯|Vilnius|eu|
+LU|盧森堡|盧森堡市|Luxembourg|eu|
+MT|馬爾他|瓦勒他|Valletta|eu|
+MD|摩爾多瓦|基希涅夫|Chișinău|eu|
+MC|摩納哥|摩納哥|Monaco|eu|城市國家
+ME|蒙特內哥羅|波德里查|Podgorica|eu|
+NL|荷蘭|阿姆斯特丹|Amsterdam|eu|政府和國會在海牙
+MK|北馬其頓|史高比耶|Skopje|eu|
+NO|挪威|奧斯陸|Oslo|eu|
+PL|波蘭|華沙|Warsaw|eu|
+PT|葡萄牙|里斯本|Lisbon|eu|
+RO|羅馬尼亞|布加勒斯特|Bucharest|eu|
+RU|俄羅斯|莫斯科|Moscow|eu|
+SM|聖馬利諾|聖馬利諾市|San Marino|eu|
+RS|塞爾維亞|貝爾格勒|Belgrade|eu|
+SK|斯洛伐克|布拉提斯拉瓦|Bratislava|eu|
+SI|斯洛維尼亞|盧布爾雅那|Ljubljana|eu|
+ES|西班牙|馬德里|Madrid|eu|
+SE|瑞典|斯德哥爾摩|Stockholm|eu|
+CH|瑞士|伯恩|Bern|eu|官方稱「聯邦城市」，憲法沒有寫首都
+UA|烏克蘭|基輔|Kyiv|eu|
+GB|英國|倫敦|London|eu|
+VA|梵蒂岡|梵蒂岡城|Vatican City|eu|城市國家
+DZ|阿爾及利亞|阿爾及爾|Algiers|af|
+AO|安哥拉|魯安達|Luanda|af|
+BJ|貝南|波多諾伏|Porto-Novo|af|多數政府機關在柯多努
+BW|波札那|嘉柏隆里|Gaborone|af|
+BF|布吉納法索|瓦加杜古|Ouagadougou|af|
+BI|蒲隆地|基特加|Gitega|af|2019 年起；最大城市是布松布拉
+CV|維德角|培亞|Praia|af|
+CM|喀麥隆|雅溫德|Yaoundé|af|
+CF|中非|班基|Bangui|af|
+TD|查德|恩加美納|N'Djamena|af|
+KM|葛摩|莫洛尼|Moroni|af|
+CG|剛果共和國|布拉薩市|Brazzaville|af|
+CD|剛果民主共和國|金夏沙|Kinshasa|af|
+DJ|吉布地|吉布地市|Djibouti|af|
+EG|埃及|開羅|Cairo|af|
+GQ|赤道幾內亞|馬拉博|Malabo|af|
+ER|厄利垂亞|阿斯瑪拉|Asmara|af|
+SZ|史瓦帝尼|墨巴本|Mbabane|af|王室和國會在洛班巴
+ET|衣索比亞|阿迪斯阿貝巴|Addis Ababa|af|
+GA|加彭|自由市|Libreville|af|
+GM|甘比亞|班竹|Banjul|af|
+GH|迦納|阿克拉|Accra|af|
+GN|幾內亞|柯那克里|Conakry|af|
+GW|幾內亞比索|比索|Bissau|af|
+CI|象牙海岸|雅穆索戈|Yamoussoukro|af|最大城市是阿必尚
+KE|肯亞|奈洛比|Nairobi|af|
+LS|賴索托|馬塞魯|Maseru|af|
+LR|賴比瑞亞|蒙羅維亞|Monrovia|af|
+LY|利比亞|的黎波里|Tripoli|af|
+MG|馬達加斯加|安塔那那利佛|Antananarivo|af|
+MW|馬拉威|里朗威|Lilongwe|af|
+ML|馬利|巴馬科|Bamako|af|
+MR|茅利塔尼亞|諾克少|Nouakchott|af|
+MU|模里西斯|路易士港|Port Louis|af|
+MA|摩洛哥|拉巴特|Rabat|af|
+MZ|莫三比克|馬布多|Maputo|af|
+NA|納米比亞|溫荷克|Windhoek|af|
+NE|尼日|尼阿美|Niamey|af|
+NG|奈及利亞|阿布加|Abuja|af|1991 年從拉哥斯遷過來
+RW|盧安達|吉佳利|Kigali|af|
+ST|聖多美普林西比|聖多美|São Tomé|af|
+SN|塞內加爾|達喀爾|Dakar|af|
+SC|塞席爾|維多利亞|Victoria|af|
+SL|獅子山|自由城|Freetown|af|
+SO|索馬利亞|摩加迪休|Mogadishu|af|
+ZA|南非|普利托利亞|Pretoria|af|行政首都；立法首都開普敦、司法首都布隆泉
+SS|南蘇丹|朱巴|Juba|af|
+SD|蘇丹|喀土穆|Khartoum|af|
+TZ|坦尚尼亞|杜篤瑪|Dodoma|af|最大城市是三蘭港
+TG|多哥|洛美|Lomé|af|
+TN|突尼西亞|突尼斯|Tunis|af|
+UG|烏干達|坎帕拉|Kampala|af|
+ZM|尚比亞|路沙卡|Lusaka|af|
+ZW|辛巴威|哈拉雷|Harare|af|
+AG|安地卡及巴布達|聖約翰|St. John's|am|
+AR|阿根廷|布宜諾斯艾利斯|Buenos Aires|am|
+BS|巴哈馬|拿索|Nassau|am|
+BB|巴貝多|橋鎮|Bridgetown|am|
+BZ|貝里斯|貝爾墨潘|Belmopan|am|
+BO|玻利維亞|蘇克雷|Sucre|am|法定首都；政府所在地是拉巴斯
+BR|巴西|巴西利亞|Brasília|am|1960 年從里約熱內盧遷過來
+CA|加拿大|渥太華|Ottawa|am|最大城市是多倫多
+CL|智利|聖地牙哥|Santiago|am|
+CO|哥倫比亞|波哥大|Bogotá|am|
+CR|哥斯大黎加|聖荷西|San José|am|
+CU|古巴|哈瓦那|Havana|am|
+DM|多米尼克|羅梭|Roseau|am|
+DO|多明尼加|聖多明哥|Santo Domingo|am|
+EC|厄瓜多|基多|Quito|am|
+SV|薩爾瓦多|聖薩爾瓦多|San Salvador|am|
+GD|格瑞那達|聖喬治|St. George's|am|
+GT|瓜地馬拉|瓜地馬拉市|Guatemala City|am|
+GY|蓋亞那|喬治城|Georgetown|am|
+HT|海地|太子港|Port-au-Prince|am|
+HN|宏都拉斯|德古斯加巴|Tegucigalpa|am|
+JM|牙買加|京斯敦|Kingston|am|
+MX|墨西哥|墨西哥市|Mexico City|am|
+NI|尼加拉瓜|馬拿瓜|Managua|am|
+PA|巴拿馬|巴拿馬市|Panama City|am|
+PY|巴拉圭|亞松森|Asunción|am|
+PE|秘魯|利馬|Lima|am|
+KN|聖克里斯多福及尼維斯|巴士地|Basseterre|am|
+LC|聖露西亞|卡斯翠|Castries|am|
+VC|聖文森及格瑞那丁|金石城|Kingstown|am|
+SR|蘇利南|巴拉馬利波|Paramaribo|am|
+TT|千里達及托巴哥|西班牙港|Port of Spain|am|
+US|美國|華盛頓特區|Washington, D.C.|am|最大城市是紐約
+UY|烏拉圭|蒙特維多|Montevideo|am|
+VE|委內瑞拉|卡拉卡斯|Caracas|am|
+AU|澳洲|坎培拉|Canberra|oc|最大城市是雪梨
+FJ|斐濟|蘇瓦|Suva|oc|
+KI|吉里巴斯|塔拉瓦|Tarawa|oc|
+MH|馬紹爾群島|馬久羅|Majuro|oc|
+FM|密克羅尼西亞|帕利基爾|Palikir|oc|
+NR|諾魯|雅連|Yaren|oc|沒有法定首都，政府設在雅連
+NZ|紐西蘭|威靈頓|Wellington|oc|最大城市是奧克蘭
+PW|帛琉|恩吉魯穆德|Ngerulmud|oc|
+PG|巴布亞紐幾內亞|莫士比港|Port Moresby|oc|
+WS|薩摩亞|阿皮亞|Apia|oc|
+SB|索羅門群島|荷尼阿拉|Honiara|oc|
+TO|東加|努瓜婁發|Nukuʻalofa|oc|
+TV|吐瓦魯|富納富提|Funafuti|oc|
+VU|萬那杜|維拉港|Port Vila|oc|`;
+
+const REGIONS = [["as","亞洲"],["eu","歐洲"],["af","非洲"],["am","美洲"],["oc","大洋洲"]];
+const REGION_NAME = Object.fromEntries(REGIONS);
+const C = RAW.trim().split("\n").map(l => { const [code,name,cap,en,reg,note] = l.split("|"); return {code,name,cap,en,reg,note:note||""}; });
+const BY = Object.fromEntries(C.map(c => [c.code, c]));
+const flag = code => String.fromCodePoint(...[...code].map(ch => 0x1F1E6 + ch.charCodeAt(0) - 65));
+const SITE_URL = "https://yushanlabs.github.io/capitals/";
+
+// ---------- FSRS-5（預設參數，目標記住率 90%） ----------
+const W = [0.40255,1.18385,3.173,15.69105,7.1949,0.5345,1.4604,0.0046,1.54575,0.1192,1.01925,1.9395,0.11,0.29605,2.2698,0.2315,2.9898,0.51655,0.6621];
+const DECAY = -0.5, FACTOR = 19/81;
+const MIN = 60e3, HOUR = 3600e3, DAY = 86400e3;
+const clampD = d => Math.min(10, Math.max(1, d));
+const D0 = g => clampD(W[4] - Math.exp(W[5]*(g-1)) + 1);
+const retr = (t, s) => Math.pow(1 + FACTOR*t/s, DECAY);
+const nextD = (d, g) => { const d1 = d + (-W[6]*(g-3))*(10-d)/9; return clampD(W[7]*D0(4) + (1-W[7])*d1); };
+const sSuccess = (d, s, r, g) => s*(1 + Math.exp(W[8])*(11-d)*Math.pow(s,-W[9])*(Math.exp(W[10]*(1-r))-1)*(g===2?W[15]:1)*(g===4?W[16]:1));
+const sFail = (d, s, r) => Math.min(s, W[11]*Math.pow(d,-W[12])*(Math.pow(s+1,W[13])-1)*Math.exp(W[14]*(1-r)));
+const sShort = (s, g) => s*Math.exp(W[17]*(g-3+W[18]));
+
+// 一天從早上 4 點開始算，半夜還在練的不會被算成隔天
+const dayIdx = t => Math.floor((t - new Date(t).getTimezoneOffset()*MIN - 4*HOUR) / DAY);
+const dayStart = i => { const t = i*DAY + 4*HOUR; return t + new Date(t).getTimezoneOffset()*MIN; };
+
+function rawRate(c, g, now) {
+  const n = c ? {...c} : {reps:0, lapses:0};
+  const learning = !c || c.learn;
+  if (!c) { n.s = W[g-1]; n.d = D0(g); }
+  else {
+    if (dayIdx(now) === dayIdx(c.last)) n.s = sShort(c.s, g);
+    else {
+      const r = retr((now - c.last)/DAY, c.s);
+      n.s = g === 1 ? sFail(c.d, c.s, r) : sSuccess(c.d, c.s, r, g);
+      if (g === 1) n.lapses = (c.lapses||0) + 1;
+    }
+    n.d = nextD(c.d, g);
+  }
+  n.s = Math.min(36500, Math.max(0.01, n.s));
+  n.reps = (n.reps||0) + 1; n.last = now;
+  if (g === 1) { n.learn = true; n.due = now + MIN; n.ivl = 0; }
+  else if (g === 2 && learning) { n.learn = true; n.due = now + 5*MIN; n.ivl = 0; }
+  else { n.learn = false; n.ivl = Math.min(36500, Math.max(1, Math.round(n.s))); }
+  return n;
+}
+// 四個按鈕一起算，確保「模糊 < 記得 < 秒答」的間隔
+function preview(c, now) {
+  const out = [1,2,3,4].map(g => rawRate(c, g, now));
+  const [ , h, g, e] = out;
+  if (!h.learn && !g.learn) { h.ivl = Math.min(h.ivl, g.ivl); g.ivl = Math.max(g.ivl, h.ivl + 1); }
+  if (!g.learn && !e.learn) e.ivl = Math.max(e.ivl, g.ivl + 1);
+  for (const o of out) if (!o.learn) o.due = dayStart(dayIdx(now) + o.ivl);
+  return out;
+}
+function fmtGap(o, now) {
+  if (o.learn) { const m = Math.round((o.due - now)/MIN); return m + " 分鐘"; }
+  const d = o.ivl;
+  if (d < 30) return d + " 天";
+  if (d < 365) return Math.round(d/30) + " 個月";
+  return (d/365).toFixed(d < 3650 ? 1 : 0).replace(/\.0$/, "") + " 年";
+}
+function fmtWhen(c, now) {
+  if (c.learn) return "今天還會再出現";
+  const days = dayIdx(c.due) - dayIdx(now);
+  if (days <= 0) return "今天要複習";
+  if (days === 1) return "明天複習";
+  if (days < 30) return days + " 天後複習";
+  if (days < 365) return Math.round(days/30) + " 個月後複習";
+  return (days/365).toFixed(1).replace(/\.0$/,"") + " 年後複習";
+}
+
+// ---------- 進度（只存在這個瀏覽器） ----------
+const KEY = "capitals-fsrs-v1";
+const shuffle = a => { a = a.slice(); for (let i = a.length-1; i > 0; i--) { const j = Math.floor(Math.random()*(i+1)); [a[i],a[j]] = [a[j],a[i]]; } return a; };
+const fresh = () => ({v:1, cards:{}, newLog:{}, order:shuffle(C.map(c => c.code)), settings:{newPerDay:10, region:"all"}, updatedAt:0});
+function normalize(s) {
+  if (!s || typeof s !== "object" || !s.cards) return fresh();
+  const known = new Set(s.order || []);
+  s.order = (s.order || []).filter(k => BY[k]).concat(shuffle(C.map(c => c.code).filter(k => !known.has(k))));
+  s.newLog = s.newLog || {}; s.settings = Object.assign({newPerDay:10, region:"all"}, s.settings || {});
+  for (const k of Object.keys(s.cards)) if (!BY[k]) delete s.cards[k];
+  return s;
+}
+function loadLocal() { try { return JSON.parse(localStorage.getItem(KEY)); } catch { return null; } }
+function saveLocal() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch {} }
+let state = normalize(loadLocal());
+function save() { state.updatedAt = Date.now(); saveLocal(); }
+// 請瀏覽器不要自動清掉進度
+try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch {}
+
+// ---------- 今天的佇列 ----------
+const introducedToday = now => state.newLog[dayIdx(now)] || 0;
+function queue(now) {
+  const learnDue = [], learnLater = [], rev = [];
+  for (const [k, c] of Object.entries(state.cards)) {
+    if (c.learn) (c.due <= now ? learnDue : learnLater).push(k);
+    else if (c.due <= now) rev.push(k);
+  }
+  learnDue.sort((a,b) => state.cards[a].due - state.cards[b].due);
+  learnLater.sort((a,b) => state.cards[a].due - state.cards[b].due);
+  rev.sort((a,b) => state.cards[a].due - state.cards[b].due);
+  const left = Math.max(0, state.settings.newPerDay - introducedToday(now));
+  const region = state.settings.region;
+  const fresh = state.order.filter(k => !state.cards[k] && (region === "all" || BY[k].reg === region)).slice(0, left);
+  return {learnDue, learnLater, rev, fresh};
+}
+
+// ---------- 首頁 ----------
+const $ = id => document.getElementById(id);
+const regionSel = $("regionSel");
+regionSel.innerHTML = `<option value="all">全部</option>` + REGIONS.map(([k,n]) => `<option value="${k}">${n}</option>`).join("");
+const openTiles = new Set();
+
+function strength(c, now) {
+  if (!c) return {color:"var(--line)", w:100};
+  if (c.learn) return {color:"var(--again)", w:100};
+  const color = c.s >= 21 ? "var(--accent)" : "var(--mark)";
+  const w = Math.max(12, Math.min(100, Math.round(retr((now - c.last)/DAY, c.s)*100)));
+  return {color, w};
+}
+function renderHome() {
+  const now = Date.now();
+  const q = queue(now);
+  $("nDue").textContent = q.rev.length + q.learnDue.length + q.learnLater.length;
+  $("nNew").textContent = q.fresh.length;
+  const seen = Object.keys(state.cards);
+  const reviewed = seen.map(k => state.cards[k]).filter(c => !c.learn);
+  $("nSeen").textContent = reviewed.length;
+  const dayLabel = $("nDay").nextElementSibling;
+  if (state.finishedAt) { $("nDay").textContent = dayIdx(state.finishedAt) - dayIdx(state.startedAt) + 1; dayLabel.textContent = "天背完全部"; }
+  else { $("nDay").textContent = state.startedAt ? dayIdx(now) - dayIdx(state.startedAt) + 1 : "—"; dayLabel.textContent = "第幾天"; }
+  $("nRecall").textContent = reviewed.length ? Math.round(reviewed.reduce((a,c) => a + retr((now - c.last)/DAY, c.s), 0)/reviewed.length*100) + "%" : "—";
+  const total = q.rev.length + q.learnDue.length + q.learnLater.length + q.fresh.length;
+  $("startBtn").disabled = total === 0;
+  $("startBtn").textContent = total === 0 ? "今天完成了" : "開始練習";
+  $("newPerDay").value = String(state.settings.newPerDay);
+  regionSel.value = state.settings.region;
+
+  $("regions").innerHTML = REGIONS.map(([rk, rn]) => {
+    const list = C.filter(c => c.reg === rk);
+    const learned = list.filter(c => state.cards[c.code]).length;
+    return `<section class="region"><div class="region-head"><h2>${rn}</h2><span>${learned}／${list.length}</span></div><div class="grid">` +
+      list.map(c => {
+        const card = state.cards[c.code], st = strength(card, now), open = openTiles.has(c.code);
+        const body = open
+          ? `<span class="cap">${c.cap}</span><span class="when">${card ? fmtWhen(card, now) : "還沒學"}</span>`
+          : `<span class="when">${card ? fmtWhen(card, now) : "點一下看首都"}</span>`;
+        return `<button class="tile${open ? " open" : ""}" data-code="${c.code}" aria-expanded="${open}"><span class="flag" aria-hidden="true">${flag(c.code)}</span><span class="name">${c.name}</span>${body}<span class="bar"><i style="width:${st.w}%;background:${st.color}"></i></span></button>`;
+      }).join("") + `</div></section>`;
+  }).join("");
+}
+$("regions").addEventListener("click", e => {
+  const t = e.target.closest(".tile"); if (!t) return;
+  const k = t.dataset.code; openTiles.has(k) ? openTiles.delete(k) : openTiles.add(k);
+  renderHome();
+  const again = document.querySelector(`.tile[data-code="${k}"]`); if (again) again.focus();
+});
+$("newPerDay").addEventListener("change", e => { state.settings.newPerDay = +e.target.value; save(); renderHome(); });
+regionSel.addEventListener("change", e => { state.settings.region = e.target.value; save(); renderHome(); });
+
+$("resetBox").addEventListener("click", e => {
+  const box = $("resetBox");
+  if (e.target.id === "resetBtn") {
+    box.innerHTML = `<div class="confirm"><span>所有卡片會回到還沒學的狀態，確定嗎？</span><button class="danger" id="resetYes">清除</button><button id="resetNo">取消</button></div>`;
+  } else if (e.target.id === "resetYes") {
+    state = fresh(); save(); openTiles.clear(); renderHome();
+    box.innerHTML = `<button class="reset" id="resetBtn">清除我的進度</button>`;
+  } else if (e.target.id === "resetNo") {
+    box.innerHTML = `<button class="reset" id="resetBtn">清除我的進度</button>`;
+  }
+});
+
+// ---------- 練習 ----------
+let current = null, flipped = false, lastCode = null, studyTimer = null;
+const stage = $("stage");
+
+function pickNext() {
+  const now = Date.now(), q = queue(now);
+  const order = [...q.learnDue, ...q.rev, ...q.fresh];
+  let pick = order.find(k => k !== lastCode) || order[0];
+  // 只剩學習中的卡片：20 分鐘內要出現的就先拿來考
+  if (!pick && q.learnLater.length) {
+    const soon = q.learnLater.filter(k => state.cards[k].due - now < 20*MIN);
+    pick = soon.find(k => k !== lastCode) || soon[0];
+  }
+  return {pick, q};
+}
+function renderQueue(q) {
+  $("qNew").textContent = q.fresh.length;
+  $("qLearn").textContent = q.learnDue.length + q.learnLater.length;
+  $("qRev").textContent = q.rev.length;
+}
+function showNext() {
+  clearTimeout(studyTimer);
+  const {pick, q} = pickNext();
+  renderQueue(q);
+  if (!pick) {
+    current = null;
+    const later = q.learnLater.length ? state.cards[q.learnLater[0]] : null;
+    stage.innerHTML = later
+      ? `<div class="done"><h2>先休息一下</h2><p class="muted">還有 ${q.learnLater.length} 張學習中的卡片，${Math.max(1, Math.round((later.due - Date.now())/MIN))} 分鐘後會再出現。</p><button class="flipbtn" id="backHome">回首頁</button></div>`
+      : `<div class="done"><h2>今天完成了</h2><p class="muted">明天再回來，演算法會把快忘記的卡片排給你。</p>${installHTML()}<button class="flipbtn" id="backHome">回首頁</button></div>`;
+    if (later) studyTimer = setTimeout(showNext, Math.max(5000, later.due - Date.now() - 20*MIN + 1000));
+    return;
+  }
+  current = pick; flipped = false; renderCard();
+}
+function renderCard() {
+  const c = BY[current], card = state.cards[current], now = Date.now();
+  const tag = card ? (card.learn ? "學習中" : "複習") : "新卡";
+  let html = `<div class="card${flipped ? " flip" : ""}" id="theCard" role="button" tabindex="0" aria-label="${flipped ? "卡片背面" : "翻開卡片"}">
+    <span class="tag">${tag}・${REGION_NAME[c.reg]}</span>
+    <span class="flag" aria-hidden="true">${flag(c.code)}</span>
+    <span class="country">${c.name}</span>`;
+  if (!flipped) html += `<span class="q">首都是？</span></div><button class="flipbtn" id="flipBtn">翻開</button><span class="hint">空白鍵翻開</span>`;
+  else {
+    const p = preview(card, now);
+    html += `<div class="answer"><span class="capital">${c.cap}</span><span class="en">${c.en}</span>${c.note ? `<span class="note">${c.note}</span>` : ""}</div></div>
+      <div class="rates">
+        <button class="r1" data-g="1"><b>忘了</b><span>${fmtGap(p[0], now)}</span></button>
+        <button class="r2" data-g="2"><b>模糊</b><span>${fmtGap(p[1], now)}</span></button>
+        <button class="r3" data-g="3"><b>記得</b><span>${fmtGap(p[2], now)}</span></button>
+        <button class="r4" data-g="4"><b>秒答</b><span>${fmtGap(p[3], now)}</span></button>
+      </div><span class="hint">按鍵 1–4 也可以作答</span>`;
+  }
+  stage.innerHTML = html;
+}
+function flip() { if (current && !flipped) { flipped = true; renderCard(); } }
+function rate(g) {
+  if (!current || !flipped) return;
+  const now = Date.now(), card = state.cards[current];
+  if (!card) { const d = dayIdx(now); state.newLog[d] = (state.newLog[d] || 0) + 1; }
+  state.cards[current] = preview(card, now)[g-1];
+  if (!state.startedAt) state.startedAt = now;
+  if (!state.finishedAt && C.every(x => state.cards[x.code] && !state.cards[x.code].learn)) state.finishedAt = now;
+  lastCode = current; save(); showNext();
+}
+stage.addEventListener("click", e => {
+  if (e.target.closest("#backHome")) return closeStudy();
+  if (e.target.closest("[data-install]")) return handleInstallClick(e);
+  const r = e.target.closest("[data-g]"); if (r) return rate(+r.dataset.g);
+  if (e.target.closest("#flipBtn") || e.target.closest("#theCard")) flip();
+});
+document.addEventListener("keydown", e => {
+  if ($("study").hidden) return;
+  if (e.key === " " || e.key === "Enter") { if (!flipped && current) { e.preventDefault(); flip(); } }
+  else if (["1","2","3","4"].includes(e.key)) rate(+e.key);
+  else if (e.key === "Escape") closeStudy();
+});
+function openStudy() { $("study").hidden = false; document.body.style.overflow = "hidden"; lastCode = null; showNext(); }
+function closeStudy() { clearTimeout(studyTimer); $("study").hidden = true; document.body.style.overflow = ""; current = null; renderHome(); renderInstallHome(); }
+$("startBtn").addEventListener("click", openStudy);
+$("closeBtn").addEventListener("click", closeStudy);
+
+// ---------- 快問快答與個人紀錄 ----------
+const QUIZ_MS = 60e3;
+let qz = null;
+const lsGet = k => { try { return localStorage.getItem(k) || ""; } catch { return ""; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
+const quizStage = $("quizStage");
+
+function history() { try { const h = JSON.parse(lsGet("capitals-history")); return Array.isArray(h) ? h : []; } catch { return []; } }
+function myBest() { return Math.max(+lsGet("capitals-best") || 0, ...history().map(h => h.score)); }
+function fmtDate(t) { const d = new Date(t); return `${d.getMonth()+1}/${d.getDate()}`; }
+function renderBoard() {
+  const top = history().slice().sort((a, b) => b.score - a.score || a.at - b.at).slice(0, 5);
+  $("board").innerHTML = top.length
+    ? top.map(h => `<li><span class="nm">${fmtDate(h.at)}</span><b>${h.score}</b></li>`).join("")
+    : `<li class="muted empty">還沒有紀錄，玩一次就會出現在這裡。</li>`;
+  const best = myBest();
+  $("myBest").textContent = best ? `你的最佳紀錄：${best} 題，共玩了 ${history().length} 次` : "";
+}
+
+function nextQuestion() {
+  if (!qz.deck.length) qz.deck = shuffle(C);
+  const c = qz.deck.pop();
+  const others = shuffle(C.filter(x => x.reg === c.reg && x.cap !== c.cap)).slice(0, 3).map(x => x.cap);
+  qz.q = {c, opts: shuffle([c.cap, ...others])};
+  qz.lock = false;
+  quizStage.innerHTML = `<div class="card" style="cursor:default">
+      <span class="tag">${REGION_NAME[c.reg]}</span>
+      <span class="flag" aria-hidden="true">${flag(c.code)}</span>
+      <span class="country">${c.name}</span>
+      <span class="q">首都是？</span></div>
+    <div class="opts">${qz.q.opts.map((o, i) => `<button data-i="${i}">${o}</button>`).join("")}</div>
+    <span class="hint">按鍵 1–4 也可以作答</span>`;
+}
+function answer(i) {
+  if (!qz || qz.lock || qz.over) return;
+  qz.lock = true; qz.answered++;
+  const btns = quizStage.querySelectorAll(".opts button");
+  const right = qz.q.opts.indexOf(qz.q.c.cap);
+  const ok = i === right;
+  if (ok) { qz.score++; qz.right.push(qz.q.c.code); }
+  btns[right].classList.add("right");
+  if (!ok) btns[i].classList.add("wrong");
+  $("qzScore").textContent = qz.score;
+  setTimeout(() => { if (qz && !qz.over) nextQuestion(); }, ok ? 350 : 900);
+}
+function tick() {
+  if (!qz || qz.over) return;
+  const left = Math.max(0, QUIZ_MS - (Date.now() - qz.start));
+  $("qzTime").textContent = Math.ceil(left / 1000);
+  $("qzBar").style.width = (left / QUIZ_MS * 100) + "%";
+  if (left <= 0) endQuiz();
+}
+function startQuiz() {
+  $("quiz").hidden = false; document.body.style.overflow = "hidden"; $("quiz").scrollTop = 0;
+  qz = {deck: shuffle(C), score: 0, answered: 0, right: [], start: Date.now(), over: false};
+  $("qzScore").textContent = "0";
+  nextQuestion(); tick();
+  qz.raf = setInterval(tick, 100);
+}
+function endQuiz() {
+  qz.over = true; clearInterval(qz.raf);
+  const prev = myBest(), score = qz.score;
+  if (score > (+lsGet("capitals-best") || 0)) lsSet("capitals-best", String(score));
+  const h = history(); h.push({score, at: Date.now()}); lsSet("capitals-history", JSON.stringify(h.slice(-100)));
+  qz.newRecord = score > prev && prev > 0;
+  quizStage.innerHTML = `<div class="done">
+      <span class="eyebrow">時間到</span>
+      <span class="bigscore">${score}</span>
+      <p>答對 ${score} 題，共答 ${qz.answered} 題${qz.newRecord ? "，刷新你的紀錄！" : ""}</p>
+      <button class="sharebtn" id="shareBtn">分享成績</button>
+      <p class="muted small" id="shareMsg"></p>
+      <div class="row"><button class="flipbtn" id="quizAgain" style="width:auto;padding-inline:24px">再玩一次</button><button class="ghost" id="quizHome">回首頁</button></div>
+      <p class="muted small">想讓分數變高？每天用首頁的翻牌練幾張，FSRS 會幫你記住。</p>
+      ${installHTML()}
+    </div>`;
+  renderBoard();
+  // 先把成績圖畫好，按下分享時才能馬上叫出系統分享選單
+  const run = qz;
+  run.imgReady = makeShareImage(run).then(b => (run.blob = b)).catch(() => null);
+}
+
+// ---------- 分享成績圖 ----------
+async function makeShareImage(r) {
+  try { await document.fonts.ready; } catch {}
+  const Wd = 1080, Ht = 1350, cv = document.createElement("canvas");
+  cv.width = Wd; cv.height = Ht;
+  const g = cv.getContext("2d");
+  const serif = `"Noto Serif TC","Songti TC","PMingLiU",serif`;
+  const sans = `-apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif`;
+  const emoji = `"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif`;
+  g.fillStyle = "#1D5D71"; g.fillRect(0, 0, Wd, Ht);
+  // 白色卡片
+  const pad = 70, cx = pad, cy = pad, cw = Wd - pad*2, ch = Ht - pad*2;
+  g.fillStyle = "#FAFBF8";
+  g.beginPath(); g.roundRect ? g.roundRect(cx, cy, cw, ch, 44) : g.rect(cx, cy, cw, ch); g.fill();
+  g.textAlign = "center"; g.textBaseline = "alphabetic";
+  g.fillStyle = "#5A696B"; g.font = `500 36px ${sans}`;
+  g.fillText("首都翻牌・60 秒快問快答", Wd/2, cy + 110);
+  g.fillStyle = "#1D5D71"; g.font = `700 300px Spectral,Georgia,serif`;
+  g.fillText(String(r.score), Wd/2, cy + 420);
+  g.fillStyle = "#1B292D"; g.font = `700 54px ${serif}`;
+  g.fillText(`60 秒答對 ${r.score} 個首都`, Wd/2, cy + 520);
+  g.fillStyle = "#5A696B"; g.font = `400 34px ${sans}`;
+  g.fillText(`共答 ${r.answered} 題${r.newRecord ? "・刷新個人紀錄" : ""}`, Wd/2, cy + 580);
+  // 答對的國旗
+  const flags = r.right.slice(0, 32);
+  if (flags.length) {
+    const per = 8, size = 74, gap = 22, top = cy + 660;
+    g.font = `${size}px ${emoji}`; g.textBaseline = "top";
+    flags.forEach((code, i) => {
+      const row = Math.floor(i / per), col = i % per;
+      const inRow = Math.min(per, flags.length - row*per);
+      const rowW = inRow*size + (inRow-1)*gap;
+      g.fillText(flag(code), Wd/2 - rowW/2 + col*(size+gap) + size/2, top + row*(size+gap));
+    });
+    g.textBaseline = "alphabetic";
+  }
+  // 底部
+  g.strokeStyle = "#D2D9D3"; g.lineWidth = 2;
+  g.beginPath(); g.moveTo(cx + 60, cy + ch - 170); g.lineTo(cx + cw - 60, cy + ch - 170); g.stroke();
+  g.fillStyle = "#1B292D"; g.font = `700 46px ${serif}`;
+  g.fillText("你能答對幾個？", Wd/2, cy + ch - 95);
+  g.fillStyle = "#1D5D71"; g.font = `500 34px ${sans}`;
+  g.fillText("yushanlabs.github.io/capitals", Wd/2, cy + ch - 45);
+  return await new Promise((ok, bad) => cv.toBlob(b => b ? ok(b) : bad(new Error("toBlob")), "image/png"));
+}
+async function shareScore() {
+  const r = qz; if (!r) return;
+  const msg = $("shareMsg");
+  if (!r.blob) { msg.textContent = "圖片準備中…"; await r.imgReady; msg.textContent = ""; }
+  const text = `我在「首都翻牌」60 秒答對 ${r.score} 個首都，你能答對幾個？`;
+  const file = r.blob ? new File([r.blob], `首都翻牌-${r.score}題.png`, {type: "image/png"}) : null;
+  try {
+    if (file && navigator.canShare && navigator.canShare({files: [file]})) {
+      await navigator.share({files: [file], text: text + " " + SITE_URL});
+      return;
+    }
+    if (!file && navigator.share) { await navigator.share({text, url: SITE_URL}); return; }
+  } catch (e) {
+    if (e && e.name === "AbortError") return; // 使用者自己取消
+  }
+  if (file) showSheet(r.blob, file.name);
+  else msg.textContent = "這個瀏覽器不能分享，請直接截圖。";
+}
+function showSheet(blob, name) {
+  const url = URL.createObjectURL(blob), sheet = $("sheet");
+  sheet.innerHTML = `<div class="box"><img src="${url}" alt="成績圖"><p class="small muted">手機：長按圖片可以儲存或分享。</p><a href="${url}" download="${name}">下載圖片</a><button class="ghost" id="sheetClose">關閉</button></div>`;
+  sheet.hidden = false;
+}
+$("sheet").addEventListener("click", e => {
+  if (e.target.id === "sheetClose" || e.target.id === "sheet") { $("sheet").hidden = true; $("sheet").innerHTML = ""; }
+});
+
+quizStage.addEventListener("click", e => {
+  const b = e.target.closest("[data-i]"); if (b) return answer(+b.dataset.i);
+  if (e.target.closest("#shareBtn")) return shareScore();
+  if (e.target.closest("#quizAgain")) return startQuiz();
+  if (e.target.closest("#quizHome")) return closeQuiz();
+  handleInstallClick(e);
+});
+function closeQuiz() { if (qz) { qz.over = true; clearInterval(qz.raf); } qz = null; $("quiz").hidden = true; document.body.style.overflow = ""; renderHome(); renderBoard(); renderInstallHome(); }
+$("quizBtn").addEventListener("click", startQuiz);
+$("quizClose").addEventListener("click", closeQuiz);
+document.addEventListener("keydown", e => {
+  if ($("quiz").hidden || !qz || qz.over) return;
+  if (["1","2","3","4"].includes(e.key)) answer(+e.key - 1);
+  else if (e.key === "Escape") closeQuiz();
+});
+
+// ---------- 加入主畫面提醒 ----------
+const ua = navigator.userAgent;
+const isStandalone = () => matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+const isIOS = /iPhone|iPad|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+const isAndroid = /Android/.test(ua);
+const inApp = /Line\/|FBAN|FBAV|Instagram|MicroMessenger|; wv\)/.test(ua);
+let deferredPrompt = null;
+window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); deferredPrompt = e; renderInstallHome(); });
+window.addEventListener("appinstalled", () => { deferredPrompt = null; lsSet("capitals-install-hide", "1"); renderInstallHome(); });
+
+function installSteps() {
+  if (inApp) return isIOS
+    ? "現在是在 LINE 或 Facebook 裡面開的。請點右上角選單，選「用 Safari 開啟」，再到 Safari 點「分享」→「加入主畫面」。"
+    : "現在是在 LINE 或 Facebook 裡面開的。請點選單，選「用瀏覽器開啟」，再從瀏覽器選單選「加到主畫面」。";
+  if (deferredPrompt) return "按下面的按鈕，就會出現在手機桌面上，像 App 一樣一點就開。";
+  if (isIOS) return "在 Safari 點「分享」按鈕（方框加向上箭頭，有時要先點「⋯」），往下找「加入主畫面」。";
+  if (isAndroid) return "點瀏覽器右上角的「⋮」選單，選「加到主畫面」或「安裝應用程式」。";
+  return "";
+}
+function installHTML(withHide) {
+  if (isStandalone()) return "";
+  const steps = installSteps(); if (!steps) return "";
+  const btns = (deferredPrompt ? `<button class="go" data-install="go">加入主畫面</button>` : "")
+    + (withHide ? `<button data-install="hide">不用了</button>` : "");
+  return `<div class="install">
+    <img src="apple-touch-icon.png" alt="">
+    <div class="txt">
+      <b>把首都翻牌放到主畫面</b>
+      <p>FSRS 要隔幾天回來複習才有效。放在主畫面，每天一點就能練，不用再找網址。</p>
+      <p>${steps}</p>
+      ${isIOS ? `<p class="small">提醒：Safari 和主畫面的進度是分開存的，建議加入後從主畫面開始練。</p>` : ""}
+      ${btns ? `<div class="acts">${btns}</div>` : ""}
+    </div></div>`;
+}
+function renderInstallHome() {
+  const box = $("installHome");
+  // 第一次來先別打擾；開始練過或玩過一次後才在首頁提醒
+  const engaged = state.startedAt || history().length;
+  const html = engaged && lsGet("capitals-install-hide") !== "1" ? installHTML(true) : "";
+  box.innerHTML = html; box.hidden = !html;
+}
+async function handleInstallClick(e) {
+  const b = e.target.closest("[data-install]"); if (!b) return false;
+  if (b.dataset.install === "hide") { lsSet("capitals-install-hide", "1"); renderInstallHome(); }
+  if (b.dataset.install === "go" && deferredPrompt) {
+    deferredPrompt.prompt();
+    try { await deferredPrompt.userChoice; } catch {}
+    deferredPrompt = null; renderInstallHome();
+    b.closest(".install") && b.closest(".install").remove();
+  }
+  return true;
+}
+$("installHome").addEventListener("click", handleInstallClick);
+
+// 過午夜（早上 4 點）或學習中的卡片到期時，首頁數字跟著更新
+setInterval(() => { if ($("study").hidden) renderHome(); }, 60e3);
+// 從主畫面切回來時也更新
+document.addEventListener("visibilitychange", () => { if (!document.hidden && $("study").hidden) renderHome(); });
+
+renderHome();
+renderBoard();
+renderInstallHome();
+})();
+</script>
+</body>
+</html>
