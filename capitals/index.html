@@ -214,7 +214,6 @@ header p{max-width:62ch}
   </header>
 
   <section id="installHome" hidden aria-label="加入主畫面"></section>
-  <section class="remind" id="remindHome" hidden aria-label="每天提醒"></section>
 
   <section class="today" aria-label="今天的練習">
     <div class="counts">
@@ -264,6 +263,8 @@ header p{max-width:62ch}
   </div>
 
   <div id="regions" style="display:flex;flex-direction:column;gap:28px"></div>
+
+  <section class="remind" id="remindHome" hidden aria-label="每天提醒"></section>
 
   <div id="resetBox"><button class="reset" id="resetBtn">清除我的進度</button></div>
 
@@ -691,7 +692,7 @@ function showNext() {
     const later = q.learnLater.length ? state.cards[q.learnLater[0]] : null;
     stage.innerHTML = later
       ? `<div class="done"><h2>先休息一下</h2><p class="muted">還有 ${q.learnLater.length} 張學習中的卡片，${Math.max(1, Math.round((later.due - Date.now())/MIN))} 分鐘後會再出現。</p><button class="flipbtn" id="backHome">回首頁</button></div>`
-      : `<div class="done"><h2>今天完成了</h2><p class="muted">明天再回來，演算法會把快忘記的卡片排給你。</p>${remindHTML()}${installHTML()}<button class="flipbtn" id="backHome">回首頁</button>${promoHTML()}</div>`;
+      : `<div class="done"><h2>今天完成了</h2><p class="muted">明天再回來，演算法會把快忘記的卡片排給你。</p>${installHTML()}<button class="flipbtn" id="backHome">回首頁</button>${promoHTML()}${remindHTML()}</div>`;
     if (later) studyTimer = setTimeout(showNext, Math.max(5000, later.due - Date.now() - 20*MIN + 1000));
     return;
   }
@@ -817,9 +818,9 @@ function endQuiz() {
       <p class="muted small" id="shareMsg"></p>
       <div class="row"><button class="flipbtn" id="quizAgain" style="width:auto;padding-inline:24px">再玩一次</button><button class="ghost" id="quizHome">回首頁</button></div>
       <p class="muted small">想讓分數變高？每天用首頁的翻牌練幾張，FSRS 會幫你記住。</p>
-      ${remindHTML()}
       ${promoHTML()}
       ${installHTML()}
+      ${remindHTML()}
     </div>`;
   renderBoard();
   // 先把成績圖畫好，按下分享時才能馬上叫出系統分享選單
@@ -935,7 +936,7 @@ function remindHTML() {
   const apple = `<a class="${appleFirst ? "main" : ""}" data-remind="ics" href="${L.ics}" target="_blank" rel="noopener">${isIOS ? "加到 iPhone 行事曆" : "Apple／Outlook 行事曆"}</a>`;
   const google = `<a class="${appleFirst ? "" : "main"}" data-remind="google" href="${L.google}" target="_blank" rel="noopener">Google 日曆</a>`;
   return `<div class="remind">
-    <b>每天提醒我回來練</b>
+    <b>想要每天提醒？</b>
     <p>在手機行事曆加一個每天重複的提醒，時間到點一下就回到這裡。不需要註冊，也不會收集任何資料。</p>
     ${inApp ? `<p><b style="font-size:14px">請先用 Safari 或手機瀏覽器開啟這個網頁</b>：現在是在 LINE、Facebook 之類的 App 裡面開的，沒辦法加到行事曆。點右上角選單，選「用 Safari 開啟」或「用瀏覽器開啟」。</p>` : ""}
     <div class="acts"${inApp ? " hidden" : ""}>
@@ -951,12 +952,11 @@ document.addEventListener("change", e => {
   box.querySelector('[data-remind="google"]').href = L.google;
 });
 document.addEventListener("click", e => {
-  if (e.target.closest('a[data-remind]')) { lsSet("capitals-remind-done", "1"); setTimeout(renderRemindHome, 500); }
+  // 首頁的提醒卡片一直留著，有興趣的人自己加
 });
 function renderRemindHome() {
   const box = $("remindHome");
-  const engaged = state.startedAt || history().length;
-  const html = engaged && lsGet("capitals-remind-done") !== "1" ? remindHTML() : "";
+  const html = remindHTML();
   box.innerHTML = html ? html.replace('<div class="remind">', '').replace(/<\/div>$/, "") : "";
   box.hidden = !html;
 }
