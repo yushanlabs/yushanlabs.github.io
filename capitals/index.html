@@ -28,6 +28,7 @@
   --mark:#A8740F; --again:#A9432F; --good:#2F6B45;
   --display:"Noto Serif TC","Songti TC","PMingLiU",serif;
   --latin:"Spectral",Georgia,"Times New Roman",serif;
+  --quizfont:"Songti TC","Noto Serif CJK TC","PMingLiU",serif;
   --body:-apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;
   color-scheme:light;
 }
@@ -56,7 +57,7 @@ h2{font-size:20px}
 p{margin:0}
 .muted{color:var(--muted)}
 .eyebrow{font-size:12px;letter-spacing:.12em;color:var(--muted)}
-button{font:inherit;color:inherit;cursor:pointer}
+button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}
 button:focus-visible,.tile:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
 header{display:flex;flex-direction:column;gap:10px}
@@ -164,7 +165,8 @@ header p{max-width:62ch}
 .timebar{max-width:640px;width:100%;margin:10px auto 0;height:4px;background:var(--line);border-radius:2px;overflow:hidden;flex:none}
 .timebar i{display:block;height:100%;background:var(--accent);width:100%}
 .opts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;width:100%}
-.opts button{border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:16px 10px;font-family:var(--display);font-size:18px;min-height:64px}
+.opts button{border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:16px 10px;font-family:var(--quizfont);font-size:18px;min-height:64px;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+#quiz .country{font-family:var(--quizfont)}
 .opts button.right{background:var(--good);border-color:var(--good);color:#fff}
 .opts button.wrong{background:var(--again);border-color:var(--again);color:#fff}
 .bigscore{font-family:var(--latin);font-size:72px;line-height:1;color:var(--accent)}
@@ -788,7 +790,7 @@ function answer(i) {
   btns[right].classList.add("right");
   if (!ok) btns[i].classList.add("wrong");
   $("qzScore").textContent = qz.score;
-  setTimeout(() => { if (qz && !qz.over) nextQuestion(); }, ok ? 350 : 900);
+  setTimeout(() => { if (qz && !qz.over) nextQuestion(); }, ok ? 120 : 600);
 }
 function tick() {
   if (!qz || qz.over) return;
@@ -900,6 +902,9 @@ $("sheet").addEventListener("click", e => {
   if (e.target.id === "sheetClose" || e.target.id === "sheet") { $("sheet").hidden = true; $("sheet").innerHTML = ""; }
 });
 
+quizStage.addEventListener("pointerdown", e => {
+  const b = e.target.closest("[data-i]"); if (b) { e.preventDefault(); answer(+b.dataset.i); }
+});
 quizStage.addEventListener("click", e => {
   const b = e.target.closest("[data-i]"); if (b) return answer(+b.dataset.i);
   if (e.target.closest("#shareBtn")) return shareScore();
