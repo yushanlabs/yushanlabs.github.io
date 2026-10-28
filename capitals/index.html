@@ -141,7 +141,8 @@ header p{max-width:62ch}
 .hint{font-size:13px;color:var(--muted)}
 .rates{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;width:100%}
 .rates button{border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:10px 4px;display:flex;flex-direction:column;align-items:center;gap:2px}
-.rates button b{font-size:15px}
+.rates button b{font-size:15px;white-space:nowrap}
+@media (max-width:420px){.rates .r1 b{font-size:13px;line-height:23px}}
 .rates button span{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
 .rates .r1 b{color:var(--again)} .rates .r2 b{color:var(--mark)} .rates .r3 b{color:var(--good)} .rates .r4 b{color:var(--accent)}
 .flipbtn{width:100%;background:var(--accent);color:var(--on-accent);border:0;border-radius:12px;padding:14px;font-size:16px;font-weight:600}
