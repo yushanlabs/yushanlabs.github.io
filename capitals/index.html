@@ -175,6 +175,10 @@ header p{max-width:62ch}
 .sharebtn{background:var(--mark);color:#fff;border:0;border-radius:999px;padding:12px 26px;font-size:16px;font-weight:600}
 .done h2{font-size:26px}
 
+.card .country-en{font-family:var(--latin);font-style:italic;font-size:17px;color:var(--muted);margin-top:-6px}
+.opts button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.opts button .en{font-family:var(--latin);font-style:italic;font-size:14px;color:var(--muted);line-height:1.2}
+.opts button.right .en,.opts button.wrong .en{color:rgba(255,255,255,.85)}
 /* 行事曆提醒 */
 .remind{display:flex;flex-direction:column;gap:8px;text-align:left;width:100%;max-width:440px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
 .remind b{font-family:var(--display);font-size:16px}
@@ -500,6 +504,9 @@ const REGION_NAME = Object.fromEntries(REGIONS);
 const C = RAW.trim().split("\n").map(l => { const [code,name,cap,en,reg,note] = l.split("|"); return {code,name,cap,en,reg,note:note||""}; });
 const BY = Object.fromEntries(C.map(c => [c.code, c]));
 const flag = code => String.fromCodePoint(...[...code].map(ch => 0x1F1E6 + ch.charCodeAt(0) - 65));
+const EN_FIX = {CD:"DR Congo", CG:"Republic of the Congo", MM:"Myanmar", CI:"Côte d'Ivoire", FM:"Micronesia", VC:"Saint Vincent and the Grenadines"};
+const enDN = (() => { try { return new Intl.DisplayNames(["en"], {type:"region"}); } catch { return null; } })();
+const enName = code => EN_FIX[code] || (enDN ? enDN.of(code).replace(/ & /g, " and ").replace(/^St\. /, "Saint ") : "");
 const SITE_URL = "https://yushanlabs.github.io/capitals/";
 
 // ---------- FSRS-5（預設參數，目標記住率 90%） ----------
@@ -706,7 +713,8 @@ function renderCard() {
   let html = `<div class="card${flipped ? " flip" : ""}" id="theCard" role="button" tabindex="0" aria-label="${flipped ? "卡片背面" : "翻開卡片"}">
     <span class="tag">${tag}・${REGION_NAME[c.reg]}</span>
     <span class="flag" aria-hidden="true">${flag(c.code)}</span>
-    <span class="country">${c.name}</span>`;
+    <span class="country">${c.name}</span>
+    <span class="country-en">${enName(c.code)}</span>`;
   if (!flipped) html += `<span class="q">首都是？</span></div><button class="flipbtn" id="flipBtn">翻開</button><span class="hint">空白鍵翻開</span>`;
   else {
     const p = preview(card, now);
@@ -769,22 +777,23 @@ function renderBoard() {
 function nextQuestion() {
   if (!qz.deck.length) qz.deck = shuffle(C);
   const c = qz.deck.pop();
-  const others = shuffle(C.filter(x => x.reg === c.reg && x.cap !== c.cap)).slice(0, 3).map(x => x.cap);
-  qz.q = {c, opts: shuffle([c.cap, ...others])};
+  const others = shuffle(C.filter(x => x.reg === c.reg && x.cap !== c.cap)).slice(0, 3);
+  qz.q = {c, opts: shuffle([c, ...others]).map(x => ({cap: x.cap, en: x.en}))};
   qz.lock = false;
   quizStage.innerHTML = `<div class="card" style="cursor:default">
       <span class="tag">${REGION_NAME[c.reg]}</span>
       <span class="flag" aria-hidden="true">${flag(c.code)}</span>
       <span class="country">${c.name}</span>
+      <span class="country-en">${enName(c.code)}</span>
       <span class="q">首都是？</span></div>
-    <div class="opts">${qz.q.opts.map((o, i) => `<button data-i="${i}">${o}</button>`).join("")}</div>
+    <div class="opts">${qz.q.opts.map((o, i) => `<button data-i="${i}"><span>${o.cap}</span><span class="en">${o.en}</span></button>`).join("")}</div>
     <span class="hint">按鍵 1–4 也可以作答</span>`;
 }
 function answer(i) {
   if (!qz || qz.lock || qz.over) return;
   qz.lock = true; qz.answered++;
   const btns = quizStage.querySelectorAll(".opts button");
-  const right = qz.q.opts.indexOf(qz.q.c.cap);
+  const right = qz.q.opts.findIndex(o => o.cap === qz.q.c.cap);
   const ok = i === right;
   if (ok) { qz.score++; qz.right.push(qz.q.c.code); }
   btns[right].classList.add("right");
