@@ -123,7 +123,7 @@ header p{max-width:62ch}
 .study{position:fixed;inset:0;background:var(--bg);z-index:20;display:flex;flex-direction:column;overflow-y:auto;
   padding:calc(16px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) calc(16px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
 .study-top{display:flex;justify-content:space-between;align-items:center;gap:12px;max-width:640px;width:100%;margin:0 auto}
-.queue{display:flex;gap:14px;font-size:13px;font-variant-numeric:tabular-nums}
+.queue{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:13px;font-variant-numeric:tabular-nums}
 .queue b{font-weight:600}
 .q-new b{color:var(--accent)} .q-learn b{color:var(--again)} .q-rev b{color:var(--mark)}
 .close{background:none;border:1px solid var(--line);border-radius:999px;padding:6px 14px;font-size:14px}
@@ -192,6 +192,11 @@ header p{max-width:62ch}
 .stamp{position:absolute;top:14px;right:14px;transform:rotate(-14deg);border:3px double var(--again);color:var(--again);border-radius:50%;width:64px;height:64px;display:flex;align-items:center;justify-content:center;text-align:center;font-size:13px;font-weight:800;line-height:1.15}
 .beat{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;font-family:var(--display);font-size:16px}
 .beat .ghost{padding:8px 18px;font-family:var(--body);font-size:14px;border-color:var(--accent);color:var(--accent)}
+/* 連對與加時 */
+.combo{color:var(--mark);font-weight:600}
+.combo i{font-style:normal;font-weight:400;color:var(--muted);margin-left:6px;font-size:12px}
+.bonus{position:fixed;left:50%;top:22%;transform:translateX(-50%);z-index:30;font-family:var(--latin);font-size:44px;font-weight:500;color:var(--good);pointer-events:none;animation:pop 1s ease-out forwards}
+@keyframes pop{0%{opacity:0;transform:translate(-50%,10px) scale(.8)}20%{opacity:1;transform:translate(-50%,0) scale(1.1)}100%{opacity:0;transform:translate(-50%,-40px) scale(1)}}
 /* 行事曆提醒 */
 .remind{display:flex;flex-direction:column;gap:8px;text-align:left;width:100%;max-width:440px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
 .remind b{font-family:var(--display);font-size:16px}
@@ -238,7 +243,7 @@ header p{max-width:62ch}
     <div class="quiz-intro">
       <span class="eyebrow">快問快答</span>
       <h2>60 秒，你能答對幾個首都？</h2>
-      <p class="muted">四選一，答錯不扣分，但會浪費時間。玩完可以把成績圖分享給朋友，過幾天練完再回來刷新紀錄。</p>
+      <p class="muted">四選一，答錯不扣分，但會浪費時間。<b>連續答對 5 題加 3 秒</b>，答錯連擊歸零。玩完可以把成績卡分享給朋友，過幾天練完再回來刷新紀錄。</p>
       <button class="start" id="quizBtn">開始 60 秒挑戰</button>
       <p class="muted small" id="myBest"></p>
     </div>
@@ -308,7 +313,7 @@ header p{max-width:62ch}
 
 <div class="study" id="quiz" hidden>
   <div class="study-top">
-    <div class="queue"><span>答對 <b id="qzScore">0</b></span><span class="muted">剩 <b id="qzTime">60</b> 秒</span></div>
+    <div class="queue"><span>答對 <b id="qzScore">0</b></span><span class="muted">剩 <b id="qzTime">60</b> 秒</span><span class="combo" id="qzCombo"></span></div>
     <button class="close" id="quizClose">結束</button>
   </div>
   <div class="timebar"><i id="qzBar"></i></div>
@@ -785,7 +790,7 @@ $("startBtn").addEventListener("click", () => { if ($("startBtn").dataset.more) 
 $("closeBtn").addEventListener("click", closeStudy);
 
 // ---------- 快問快答與個人紀錄 ----------
-const QUIZ_MS = 60e3;
+const QUIZ_MS = 60e3, COMBO = 5, BONUS_MS = 3e3;
 let qz = null;
 const lsGet = k => { try { return localStorage.getItem(k) || ""; } catch { return ""; } };
 const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
@@ -824,7 +829,12 @@ function answer(i) {
   const btns = quizStage.querySelectorAll(".opts button");
   const right = qz.q.opts.findIndex(o => o.cap === qz.q.c.cap);
   const ok = i === right;
-  if (ok) { qz.score++; qz.right.push(qz.q.c.code); }
+  if (ok) {
+    qz.score++; qz.right.push(qz.q.c.code); qz.streak++;
+    qz.maxStreak = Math.max(qz.maxStreak, qz.streak);
+    if (qz.streak % COMBO === 0) { qz.bonus += BONUS_MS; flashBonus(); }
+  } else qz.streak = 0;
+  renderCombo();
   btns[right].classList.add("right");
   if (!ok) btns[i].classList.add("wrong");
   $("qzScore").textContent = qz.score;
@@ -832,14 +842,23 @@ function answer(i) {
 }
 function tick() {
   if (!qz || qz.over) return;
-  const left = Math.max(0, QUIZ_MS - (Date.now() - qz.start));
+  const left = Math.max(0, QUIZ_MS + qz.bonus - (Date.now() - qz.start));
   $("qzTime").textContent = Math.ceil(left / 1000);
-  $("qzBar").style.width = (left / QUIZ_MS * 100) + "%";
+  $("qzBar").style.width = Math.min(100, left / QUIZ_MS * 100) + "%";
   if (left <= 0) endQuiz();
+}
+function renderCombo() {
+  const el = $("qzCombo"), n = qz ? qz.streak : 0;
+  el.innerHTML = n >= 2 ? `🔥 連對 <b>${n}</b>` + (n % COMBO ? `<i>再 ${COMBO - n % COMBO} 題 +3 秒</i>` : "") : "";
+}
+function flashBonus() {
+  const f = document.createElement("div"); f.className = "bonus"; f.textContent = "+3 秒";
+  $("quiz").appendChild(f); setTimeout(() => f.remove(), 1000);
 }
 function startQuiz() {
   $("quiz").hidden = false; document.body.style.overflow = "hidden"; $("quiz").scrollTop = 0;
-  qz = {deck: shuffle(C), score: 0, answered: 0, right: [], start: Date.now(), over: false};
+  qz = {deck: shuffle(C), score: 0, answered: 0, right: [], start: Date.now(), over: false, streak: 0, maxStreak: 0, bonus: 0};
+  renderCombo();
   $("qzScore").textContent = "0";
   nextQuestion(); tick();
   qz.raf = setInterval(tick, 100);
@@ -847,13 +866,13 @@ function startQuiz() {
 // ---------- 稱號與評語 ----------
 const TIERS = [
   {min:0,  emoji:"🧳", title:"地球觀光客", lines:["沒關係，地球是圓的，走久了總會到。","護照很新，代表未來充滿可能。","至少你知道臺灣的首都，對吧？"]},
-  {min:6,  emoji:"🗺️", title:"地圖剛打開", lines:["至少你知道東京不是中國的首都。","地圖拿反了，也是一種觀點。","Google 地圖看到你，都想主動幫你導航。"]},
-  {min:11, emoji:"✈️", title:"背包客", lines:["出國不會迷路，大概。","轉機時已經看得懂一半的目的地。","機上雜誌的地理題，難不倒你了。"]},
-  {min:16, emoji:"🧭", title:"地理小老師", lines:["已經可以在聚餐時不小心炫耀一下了。","同事開始懷疑你偷偷補習。","地理小老師，請上台帶大家念一遍。"]},
-  {min:22, emoji:"🎒", title:"外交部實習生", lines:["長官，請給我一個邦交國。","名片可以印「國際關係專家」了（自稱）。","你的大腦開始內建時區了。"]},
-  {min:29, emoji:"🏛️", title:"駐外大使", lines:["各國總統都想約你喝咖啡。","你說出首都的速度，比導遊還快。","出門記得帶國書。"]},
-  {min:36, emoji:"👑", title:"地球儀本人", lines:["你是不是偷偷背過？","地球儀看到你都想轉一圈致敬。","同事已經不想跟你比了。"]},
-  {min:45, emoji:"🌍", title:"聯合國秘書長", lines:["請收下我的膝蓋。","195 國要開會，麻煩你主持。","這不是記憶力，這是外掛吧？"]},
+  {min:7,  emoji:"🗺️", title:"地圖剛打開", lines:["至少你知道東京不是中國的首都。","地圖拿反了，也是一種觀點。","Google 地圖看到你，都想主動幫你導航。"]},
+  {min:13, emoji:"✈️", title:"背包客", lines:["出國不會迷路，大概。","轉機時已經看得懂一半的目的地。","機上雜誌的地理題，難不倒你了。"]},
+  {min:19, emoji:"🧭", title:"地理小老師", lines:["已經可以在聚餐時不小心炫耀一下了。","同事開始懷疑你偷偷補習。","地理小老師，請上台帶大家念一遍。"]},
+  {min:26, emoji:"🎒", title:"外交部實習生", lines:["長官，請給我一個邦交國。","名片可以印「國際關係專家」了（自稱）。","你的大腦開始內建時區了。"]},
+  {min:35, emoji:"🏛️", title:"駐外大使", lines:["各國總統都想約你喝咖啡。","你說出首都的速度，比導遊還快。","出門記得帶國書。"]},
+  {min:43, emoji:"👑", title:"地球儀本人", lines:["你是不是偷偷背過？","地球儀看到你都想轉一圈致敬。","同事已經不想跟你比了。"]},
+  {min:55, emoji:"🌍", title:"聯合國秘書長", lines:["請收下我的膝蓋。","195 國要開會，麻煩你主持。","這不是記憶力，這是外掛吧？"]},
 ];
 const pick = a => a[Math.floor(Math.random() * a.length)];
 function judge(r) {
@@ -882,7 +901,7 @@ function endQuiz() {
         ${j.badges.length ? `<span class="badges">${j.badges.map(b => `<span>${b}</span>`).join("")}</span>` : ""}
         <span class="rank-line">「${j.line}」</span>
         <span class="rank-score"><b>${score}</b> 題</span>
-        <span class="muted small">共答 ${qz.answered} 題・準確率 ${j.acc}%</span>
+        <span class="muted small">共答 ${qz.answered} 題・準確率 ${j.acc}%・最長連對 ${qz.maxStreak}${qz.bonus ? `・加時 ${qz.bonus/1000} 秒` : ""}</span>
         ${j.next ? `<span class="small" style="color:var(--mark)">再 ${j.next.min - score} 題升級「${j.next.title}」</span>` : `<span class="small" style="color:var(--mark)">最高等級，沒有人能再升了</span>`}
       </div>
       <button class="sharebtn" id="shareBtn">分享我的稱號</button>
@@ -962,7 +981,7 @@ async function makeShareImage(r) {
   g.textAlign = "center";
   y += 62;
   g.fillStyle = MUTED; g.font = `400 32px ${sans}`;
-  g.fillText(`共答 ${r.answered} 題・準確率 ${j.acc}%`, Wd/2, y);
+  g.fillText(`共答 ${r.answered} 題・準確率 ${j.acc}%・最長連對 ${r.maxStreak}${r.bonus ? `・加時 ${r.bonus/1000} 秒` : ""}`, Wd/2, y);
   // 評語
   y += 100;
   g.font = `600 46px ${serif}`; g.fillStyle = FG;
