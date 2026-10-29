@@ -169,7 +169,6 @@ header p{max-width:62ch}
 #quiz .country{font-family:var(--quizfont)}
 .opts button.right{background:var(--good);border-color:var(--good);color:#fff}
 .opts button.wrong{background:var(--again);border-color:var(--again);color:#fff}
-.bigscore{font-family:var(--latin);font-size:72px;line-height:1;color:var(--accent)}
 .row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
 .row .flipbtn{width:auto;padding-inline:24px}
 .ghost{background:none;border:1px solid var(--line);border-radius:999px;padding:10px 18px}
@@ -181,6 +180,18 @@ header p{max-width:62ch}
 .opts button .en{font-family:var(--latin);font-style:italic;font-size:14px;color:var(--muted);line-height:1.2}
 .opts button.right .en,.opts button.wrong .en{color:rgba(255,255,255,.85)}
 .practice-head{display:flex;flex-direction:column;gap:4px;margin-bottom:-14px}
+/* 結果頁的稱號卡 */
+.rank{position:relative;width:100%;max-width:440px;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:26px 20px 20px;display:flex;flex-direction:column;align-items:center;gap:6px;box-shadow:0 10px 30px -18px rgba(0,0,0,.35)}
+.rank-emoji{font-size:64px;line-height:1.1}
+.rank-title{font-family:var(--display);font-size:34px;font-weight:700;line-height:1.2}
+.rank-line{font-family:var(--display);font-size:18px;line-height:1.5;margin-top:4px;text-wrap:balance}
+.rank-score{font-size:20px;font-weight:600}
+.rank-score b{font-family:var(--latin);font-weight:500;font-size:56px;color:var(--accent);line-height:1}
+.badges{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+.badges span{background:#F3E7CF;color:#8A5F0C;border-radius:999px;padding:3px 12px;font-size:13px;font-weight:600}
+.stamp{position:absolute;top:14px;right:14px;transform:rotate(-14deg);border:3px double var(--again);color:var(--again);border-radius:50%;width:64px;height:64px;display:flex;align-items:center;justify-content:center;text-align:center;font-size:13px;font-weight:800;line-height:1.15}
+.beat{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;font-family:var(--display);font-size:16px}
+.beat .ghost{padding:8px 18px;font-family:var(--body);font-size:14px;border-color:var(--accent);color:var(--accent)}
 /* 行事曆提醒 */
 .remind{display:flex;flex-direction:column;gap:8px;text-align:left;width:100%;max-width:440px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
 .remind b{font-family:var(--display);font-size:16px}
@@ -833,81 +844,172 @@ function startQuiz() {
   nextQuestion(); tick();
   qz.raf = setInterval(tick, 100);
 }
+// ---------- 稱號與評語 ----------
+const TIERS = [
+  {min:0,  emoji:"🧳", title:"地球觀光客", lines:["沒關係，地球是圓的，走久了總會到。","護照很新，代表未來充滿可能。","至少你知道臺灣的首都，對吧？"]},
+  {min:6,  emoji:"🗺️", title:"地圖剛打開", lines:["至少你知道東京不是中國的首都。","地圖拿反了，也是一種觀點。","Google 地圖看到你，都想主動幫你導航。"]},
+  {min:11, emoji:"✈️", title:"背包客", lines:["出國不會迷路，大概。","轉機時已經看得懂一半的目的地。","機上雜誌的地理題，難不倒你了。"]},
+  {min:16, emoji:"🧭", title:"地理小老師", lines:["已經可以在聚餐時不小心炫耀一下了。","同事開始懷疑你偷偷補習。","地理小老師，請上台帶大家念一遍。"]},
+  {min:22, emoji:"🎒", title:"外交部實習生", lines:["長官，請給我一個邦交國。","名片可以印「國際關係專家」了（自稱）。","你的大腦開始內建時區了。"]},
+  {min:29, emoji:"🏛️", title:"駐外大使", lines:["各國總統都想約你喝咖啡。","你說出首都的速度，比導遊還快。","出門記得帶國書。"]},
+  {min:36, emoji:"👑", title:"地球儀本人", lines:["你是不是偷偷背過？","地球儀看到你都想轉一圈致敬。","同事已經不想跟你比了。"]},
+  {min:45, emoji:"🌍", title:"聯合國秘書長", lines:["請收下我的膝蓋。","195 國要開會，麻煩你主持。","這不是記憶力，這是外掛吧？"]},
+];
+const pick = a => a[Math.floor(Math.random() * a.length)];
+function judge(r) {
+  const t = TIERS.slice().reverse().find(x => r.score >= x.min);
+  const acc = r.answered ? Math.round(r.score / r.answered * 100) : 0;
+  const badges = [];
+  let line = pick(t.lines);
+  if (r.score >= 10 && r.score === r.answered) { badges.push("🎯 零失誤"); line = pick(["一題都沒錯，請問你是 Google 嗎？","零失誤，建議直接去考外交特考。"]); }
+  else if (r.answered >= 10 && acc < 50) { badges.push("🎲 亂槍打鳥"); line = pick(["速度有了，大腦跟上就好。","手比腦快，這也是一種天分。","四選一，你選擇相信直覺。"]); }
+  return {emoji: t.emoji, title: t.title, line, acc, badges, next: TIERS.find(x => x.min > r.score)};
+}
+
 function endQuiz() {
   qz.over = true; clearInterval(qz.raf);
   const prev = myBest(), score = qz.score;
   if (score > (+lsGet("capitals-best") || 0)) lsSet("capitals-best", String(score));
   const h = history(); h.push({score, at: Date.now()}); lsSet("capitals-history", JSON.stringify(h.slice(-100)));
   qz.newRecord = score > prev && prev > 0;
+  const j = qz.judge = judge(qz);
   quizStage.innerHTML = `<div class="done">
       <span class="eyebrow">時間到</span>
-      <span class="bigscore">${score}</span>
-      <p>答對 ${score} 題，共答 ${qz.answered} 題${qz.newRecord ? "，刷新你的紀錄！" : ""}</p>
-      <button class="sharebtn" id="shareBtn">分享成績</button>
+      <div class="rank">
+        ${qz.newRecord ? `<span class="stamp">個人<br>新高</span>` : ""}
+        <span class="rank-emoji" aria-hidden="true">${j.emoji}</span>
+        <span class="rank-title">${j.title}</span>
+        ${j.badges.length ? `<span class="badges">${j.badges.map(b => `<span>${b}</span>`).join("")}</span>` : ""}
+        <span class="rank-line">「${j.line}」</span>
+        <span class="rank-score"><b>${score}</b> 題</span>
+        <span class="muted small">共答 ${qz.answered} 題・準確率 ${j.acc}%</span>
+        ${j.next ? `<span class="small" style="color:var(--mark)">再 ${j.next.min - score} 題升級「${j.next.title}」</span>` : `<span class="small" style="color:var(--mark)">最高等級，沒有人能再升了</span>`}
+      </div>
+      <button class="sharebtn" id="shareBtn">分享我的稱號</button>
       <p class="muted small" id="shareMsg"></p>
       <div class="row"><button class="flipbtn" id="quizAgain" style="width:auto;padding-inline:24px">再玩一次</button><button class="ghost" id="quizHome">回首頁</button></div>
-      <p class="muted small">想讓分數變高？每天用首頁的翻牌練幾張，FSRS 會幫你記住。</p>
+      <div class="beat"><p>想破紀錄嗎？歡迎使用 FSRS 的訓練法來複習。</p><button class="ghost" id="goPractice">去複習</button></div>
       ${promoHTML()}
       ${installHTML()}
       ${remindHTML()}
     </div>`;
   renderBoard();
-  // 先把成績圖畫好，按下分享時才能馬上叫出系統分享選單
+  // 先把卡片畫好，按下分享時才能馬上叫出系統分享選單
   const run = qz;
   run.imgReady = makeShareImage(run).then(b => (run.blob = b)).catch(() => null);
 }
 
-// ---------- 分享成績圖 ----------
+// ---------- 分享卡片 ----------
+function wrapText(g, text, maxW) {
+  const out = []; let line = "";
+  for (const ch of text) {
+    if (g.measureText(line + ch).width > maxW && line) { out.push(line); line = ch; }
+    else line += ch;
+  }
+  if (line) out.push(line);
+  // 標點不要落單在行首
+  for (let i = 1; i < out.length; i++) if (/^[，。！？、」）]/.test(out[i])) { out[i-1] += out[i][0]; out[i] = out[i].slice(1); }
+  return out.filter(Boolean);
+}
 async function makeShareImage(r) {
   try { await document.fonts.ready; } catch {}
+  const j = r.judge;
   const Wd = 1080, Ht = 1350, cv = document.createElement("canvas");
   cv.width = Wd; cv.height = Ht;
   const g = cv.getContext("2d");
   const serif = `"Noto Serif TC","Songti TC","PMingLiU",serif`;
   const sans = `-apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif`;
   const emoji = `"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif`;
-  g.fillStyle = "#1D5D71"; g.fillRect(0, 0, Wd, Ht);
-  // 白色卡片
-  const pad = 70, cx = pad, cy = pad, cw = Wd - pad*2, ch = Ht - pad*2;
-  g.fillStyle = "#FAFBF8";
-  g.beginPath(); g.roundRect ? g.roundRect(cx, cy, cw, ch, 44) : g.rect(cx, cy, cw, ch); g.fill();
+  const ACC = "#1D5D71", FG = "#1B292D", MUTED = "#5A696B", GOLD = "#A8740F", RED = "#A9432F";
+  const rr = (x, y, w, h, rad) => { g.beginPath(); if (g.roundRect) g.roundRect(x, y, w, h, rad); else g.rect(x, y, w, h); };
+  // 背景：深藍綠加幾圈淡淡的同心圓
+  g.fillStyle = ACC; g.fillRect(0, 0, Wd, Ht);
+  g.strokeStyle = "rgba(255,255,255,.07)"; g.lineWidth = 2;
+  for (let i = 0; i < 9; i++) { g.beginPath(); g.arc(Wd*0.85, Ht*0.08, 140 + i*120, 0, Math.PI*2); g.stroke(); }
+  // 卡片
+  const cx = 60, cy = 60, cw = Wd - 120, ch = Ht - 120;
+  g.save(); g.shadowColor = "rgba(0,0,0,.28)"; g.shadowBlur = 40; g.shadowOffsetY = 12;
+  g.fillStyle = "#FAFBF8"; rr(cx, cy, cw, ch, 48); g.fill(); g.restore();
+  g.strokeStyle = "#D2D9D3"; g.lineWidth = 3; rr(cx + 24, cy + 24, cw - 48, ch - 48, 32); g.stroke();
   g.textAlign = "center"; g.textBaseline = "alphabetic";
-  g.fillStyle = "#5A696B"; g.font = `500 36px ${sans}`;
-  g.fillText("首都翻牌・60 秒快問快答", Wd/2, cy + 110);
-  g.fillStyle = "#1D5D71"; g.font = `700 300px Spectral,Georgia,serif`;
-  g.fillText(String(r.score), Wd/2, cy + 420);
-  g.fillStyle = "#1B292D"; g.font = `700 54px ${serif}`;
-  g.fillText(`60 秒答對 ${r.score} 個首都`, Wd/2, cy + 520);
-  g.fillStyle = "#5A696B"; g.font = `400 34px ${sans}`;
-  g.fillText(`共答 ${r.answered} 題${r.newRecord ? "・刷新個人紀錄" : ""}`, Wd/2, cy + 580);
-  // 答對的國旗
-  const flags = r.right.slice(0, 32);
+  g.fillStyle = MUTED; g.font = `500 32px ${sans}`;
+  g.fillText("首都翻牌・60 秒挑戰・稱號認證", Wd/2, cy + 112);
+  // 稱號
+  g.font = `150px ${emoji}`; g.textBaseline = "middle";
+  g.fillText(j.emoji, Wd/2, cy + 250);
+  g.textBaseline = "alphabetic";
+  g.fillStyle = FG; g.font = `700 92px ${serif}`;
+  g.fillText(j.title, Wd/2, cy + 430);
+  let y = cy + 430;
+  // 彩蛋徽章
+  if (j.badges.length) {
+    g.font = `600 34px ${sans}`;
+    const txt = j.badges.join("   "), w = g.measureText(txt).width + 64;
+    g.fillStyle = "#F3E7CF"; rr(Wd/2 - w/2, y + 30, w, 62, 31); g.fill();
+    g.fillStyle = GOLD; g.textBaseline = "middle"; g.fillText(txt, Wd/2, y + 62); g.textBaseline = "alphabetic";
+    y += 80;
+  }
+  // 分數：大數字＋「題」
+  y += 175;
+  const numFont = `500 170px Spectral,Georgia,serif`, unitFont = `700 52px ${serif}`;
+  const num = String(r.score);
+  g.font = numFont; const nw = g.measureText(num).width;
+  g.font = unitFont; const uw = g.measureText(" 題").width;
+  const sx = Wd/2 - (nw + uw)/2;
+  g.textAlign = "left";
+  g.font = numFont; g.fillStyle = ACC; g.fillText(num, sx, y);
+  g.font = unitFont; g.fillStyle = FG; g.fillText(" 題", sx + nw, y);
+  g.textAlign = "center";
+  y += 62;
+  g.fillStyle = MUTED; g.font = `400 32px ${sans}`;
+  g.fillText(`共答 ${r.answered} 題・準確率 ${j.acc}%`, Wd/2, y);
+  // 評語
+  y += 100;
+  g.font = `600 46px ${serif}`; g.fillStyle = FG;
+  const lines = wrapText(g, `「${j.line}」`, cw - 200).slice(0, 3);
+  lines.forEach((l, i) => g.fillText(l, Wd/2, y + i*64));
+  y += (lines.length - 1)*64 + 40;
+  // 答對的國旗（放得下幾排就放幾排，最多兩排）
+  const bottom = cy + ch - 200, size = 54, gap = 16, per = 10;
+  const rows = Math.max(0, Math.min(2, Math.floor((bottom - y + gap) / (size + gap))));
+  const flags = r.right.slice(0, per * rows);
   if (flags.length) {
-    const per = 8, size = 74, gap = 22, top = cy + 660;
     g.font = `${size}px ${emoji}`; g.textBaseline = "top";
+    const used = Math.ceil(flags.length/per)*(size+gap) - gap;
+    const top = y + (bottom - y - used) / 2;
     flags.forEach((code, i) => {
-      const row = Math.floor(i / per), col = i % per;
-      const inRow = Math.min(per, flags.length - row*per);
+      const row = Math.floor(i / per), col = i % per, inRow = Math.min(per, flags.length - row*per);
       const rowW = inRow*size + (inRow-1)*gap;
       g.fillText(flag(code), Wd/2 - rowW/2 + col*(size+gap) + size/2, top + row*(size+gap));
     });
     g.textBaseline = "alphabetic";
   }
+  // 個人新高印章
+  if (r.newRecord) {
+    g.save(); g.translate(cx + cw - 150, cy + 200); g.rotate(-0.25);
+    g.strokeStyle = RED; g.fillStyle = RED;
+    g.lineWidth = 6; g.beginPath(); g.arc(0, 0, 92, 0, Math.PI*2); g.stroke();
+    g.lineWidth = 2; g.beginPath(); g.arc(0, 0, 80, 0, Math.PI*2); g.stroke();
+    g.font = `800 38px ${sans}`; g.textAlign = "center"; g.textBaseline = "middle";
+    g.fillText("個人", 0, -22); g.fillText("新高", 0, 24);
+    g.restore();
+  }
   // 底部
+  const fy = cy + ch - 170;
   g.strokeStyle = "#D2D9D3"; g.lineWidth = 2;
-  g.beginPath(); g.moveTo(cx + 60, cy + ch - 170); g.lineTo(cx + cw - 60, cy + ch - 170); g.stroke();
-  g.fillStyle = "#1B292D"; g.font = `700 46px ${serif}`;
-  g.fillText("你能答對幾個？", Wd/2, cy + ch - 95);
-  g.fillStyle = "#1D5D71"; g.font = `500 34px ${sans}`;
-  g.fillText("yushanlabs.github.io/capitals", Wd/2, cy + ch - 45);
+  g.beginPath(); g.moveTo(cx + 90, fy); g.lineTo(cx + cw - 90, fy); g.stroke();
+  g.fillStyle = FG; g.font = `700 44px ${serif}`;
+  g.fillText("你能拿到什麼稱號？", Wd/2, fy + 68);
+  g.fillStyle = ACC; g.font = `600 34px ${sans}`;
+  g.fillText("yushanlabs.github.io/capitals", Wd/2, fy + 118);
   return await new Promise((ok, bad) => cv.toBlob(b => b ? ok(b) : bad(new Error("toBlob")), "image/png"));
 }
 async function shareScore() {
   const r = qz; if (!r) return;
   const msg = $("shareMsg");
   if (!r.blob) { msg.textContent = "圖片準備中…"; await r.imgReady; msg.textContent = ""; }
-  const text = `我在「首都翻牌」60 秒答對 ${r.score} 個首都，你能答對幾個？`;
-  const file = r.blob ? new File([r.blob], `首都翻牌-${r.score}題.png`, {type: "image/png"}) : null;
+  const text = `我在「首都翻牌」60 秒答對 ${r.score} 題，拿到「${r.judge.title}」稱號 ${r.judge.emoji}！你能拿到什麼？`;
+  const file = r.blob ? new File([r.blob], `首都翻牌-${r.judge.title}-${r.score}題.png`, {type: "image/png"}) : null;
   try {
     if (file && navigator.canShare && navigator.canShare({files: [file]})) {
       await navigator.share({files: [file], text: text + " " + SITE_URL});
@@ -937,6 +1039,7 @@ quizStage.addEventListener("click", e => {
   if (e.target.closest("#shareBtn")) return shareScore();
   if (e.target.closest("#quizAgain")) return startQuiz();
   if (e.target.closest("#quizHome")) return closeQuiz();
+  if (e.target.closest("#goPractice")) { closeQuiz(); const b = $("startBtn"); if (!b.disabled) b.click(); else window.scrollTo({top: $("startBtn").getBoundingClientRect().top + scrollY - 120}); return; }
   handleInstallClick(e);
 });
 function closeQuiz() { if (qz) { qz.over = true; clearInterval(qz.raf); } qz = null; $("quiz").hidden = true; document.body.style.overflow = ""; renderHome(); renderBoard(); renderInstallHome(); renderRemindHome(); }
