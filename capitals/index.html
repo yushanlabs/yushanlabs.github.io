@@ -189,7 +189,7 @@ header p{max-width:62ch}
 .remind select{font:inherit;font-size:14px;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:6px 8px}
 .remind a{display:inline-block;border-radius:999px;padding:7px 14px;font-size:14px;font-weight:600;text-decoration:none;border:1px solid var(--accent);color:var(--accent)}
 .remind a.main{background:var(--accent);color:var(--on-accent)}
-.wrap>.remind{max-width:none}
+.wrap>.remind{max-width:none;margin-top:-14px}
 /* 推廣：記憶曲線單字 App */
 .promo{display:flex;gap:14px;align-items:center;text-align:left;width:100%;max-width:440px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;text-decoration:none;color:inherit}
 .promo img{width:60px;height:60px;border-radius:14px;flex:none}
@@ -258,6 +258,8 @@ header p{max-width:62ch}
     </div>
   </section>
 
+  <section class="remind" id="remindHome" hidden aria-label="每天提醒"></section>
+
   <section class="how" aria-label="怎麼測">
     <div><h3>先猜，再翻</h3><p>看到國名先試著想首都。想不起來也沒關係，努力想的那幾秒，記憶最會長。</p></div>
     <div><h3>老實按</h3><p>沒學過或想不起來，都按「不會／忘了」，一分鐘後會再出現；想很久才想到按「模糊」；馬上想到按「記得」或「秒答」。</p></div>
@@ -275,7 +277,6 @@ header p{max-width:62ch}
   <div id="regions" style="display:flex;flex-direction:column;gap:28px"></div>
 
   <section id="installLow" hidden aria-label="加入主畫面"></section>
-  <section class="remind" id="remindHome" hidden aria-label="每天提醒"></section>
 
   <div id="resetBox"><button class="reset" id="resetBtn">清除我的進度</button></div>
 
