@@ -127,7 +127,7 @@ header p{max-width:62ch}
 .queue b{font-weight:600}
 .q-new b{color:var(--accent)} .q-learn b{color:var(--again)} .q-rev b{color:var(--mark)}
 .close{background:none;border:1px solid var(--line);border-radius:999px;padding:6px 14px;font-size:14px}
-.stage{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:20px;max-width:640px;width:100%;margin:0 auto;min-height:0;padding-block:12px}
+.stage{flex:1 0 auto;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:20px;max-width:640px;width:100%;margin:0 auto;min-height:0;padding-block:12px}
 .card{width:100%;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:36px 24px;min-height:300px;
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;cursor:pointer;
   box-shadow:0 10px 30px -18px rgba(0,0,0,.35)}
@@ -171,6 +171,7 @@ header p{max-width:62ch}
 .opts button.wrong{background:var(--again);border-color:var(--again);color:#fff}
 .bigscore{font-family:var(--latin);font-size:72px;line-height:1;color:var(--accent)}
 .row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.row .flipbtn{width:auto;padding-inline:24px}
 .ghost{background:none;border:1px solid var(--line);border-radius:999px;padding:10px 18px}
 .sharebtn{background:var(--mark);color:#fff;border:0;border-radius:999px;padding:12px 26px;font-size:16px;font-weight:600}
 .done h2{font-size:26px}
@@ -575,12 +576,12 @@ function fmtWhen(c, now) {
 // ---------- 進度（只存在這個瀏覽器） ----------
 const KEY = "capitals-fsrs-v1";
 const shuffle = a => { a = a.slice(); for (let i = a.length-1; i > 0; i--) { const j = Math.floor(Math.random()*(i+1)); [a[i],a[j]] = [a[j],a[i]]; } return a; };
-const fresh = () => ({v:1, cards:{}, newLog:{}, order:shuffle(C.map(c => c.code)), settings:{newPerDay:10, region:"all"}, updatedAt:0});
+const fresh = () => ({v:1, cards:{}, newLog:{}, extraLog:{}, order:shuffle(C.map(c => c.code)), settings:{newPerDay:10, region:"all"}, updatedAt:0});
 function normalize(s) {
   if (!s || typeof s !== "object" || !s.cards) return fresh();
   const known = new Set(s.order || []);
   s.order = (s.order || []).filter(k => BY[k]).concat(shuffle(C.map(c => c.code).filter(k => !known.has(k))));
-  s.newLog = s.newLog || {}; s.settings = Object.assign({newPerDay:10, region:"all"}, s.settings || {});
+  s.newLog = s.newLog || {}; s.extraLog = s.extraLog || {}; s.settings = Object.assign({newPerDay:10, region:"all"}, s.settings || {});
   for (const k of Object.keys(s.cards)) if (!BY[k]) delete s.cards[k];
   return s;
 }
@@ -602,11 +603,20 @@ function queue(now) {
   learnDue.sort((a,b) => state.cards[a].due - state.cards[b].due);
   learnLater.sort((a,b) => state.cards[a].due - state.cards[b].due);
   rev.sort((a,b) => state.cards[a].due - state.cards[b].due);
-  const left = Math.max(0, state.settings.newPerDay - introducedToday(now));
+  const left = Math.max(0, state.settings.newPerDay + (state.extraLog[dayIdx(now)] || 0) - introducedToday(now));
   const region = state.settings.region;
   const fresh = state.order.filter(k => !state.cards[k] && (region === "all" || BY[k].reg === region)).slice(0, left);
   return {learnDue, learnLater, rev, fresh};
 }
+
+// 今天多上一堂：只加今天的新卡，不改每天的設定
+const EXTRA = 5;
+const unlearnedLeft = () => state.order.filter(k => !state.cards[k] && (state.settings.region === "all" || BY[k].reg === state.settings.region)).length;
+function addExtra() {
+  const d = dayIdx(Date.now());
+  state.extraLog[d] = (state.extraLog[d] || 0) + EXTRA; save();
+}
+const moreBtnHTML = cls => unlearnedLeft() ? `<button class="${cls}" data-more="1">再學 ${Math.min(EXTRA, unlearnedLeft())} 張新卡</button>` : "";
 
 // ---------- 首頁 ----------
 const $ = id => document.getElementById(id);
@@ -634,8 +644,10 @@ function renderHome() {
   else { $("nDay").textContent = state.startedAt ? dayIdx(now) - dayIdx(state.startedAt) + 1 : "—"; dayLabel.textContent = "第幾天"; }
   $("nRecall").textContent = reviewed.length ? Math.round(reviewed.reduce((a,c) => a + retr((now - c.last)/DAY, c.s), 0)/reviewed.length*100) + "%" : "—";
   const total = q.rev.length + q.learnDue.length + q.learnLater.length + q.fresh.length;
-  $("startBtn").disabled = total === 0;
-  $("startBtn").textContent = total === 0 ? "今天完成了" : "開始練習";
+  const more = total === 0 && unlearnedLeft() > 0;
+  $("startBtn").disabled = total === 0 && !more;
+  $("startBtn").textContent = more ? `今天完成了・再學 ${Math.min(EXTRA, unlearnedLeft())} 張` : total === 0 ? "今天完成了" : "開始練習";
+  $("startBtn").dataset.more = more ? "1" : "";
   $("newPerDay").value = String(state.settings.newPerDay);
   regionSel.value = state.settings.region;
 
@@ -702,7 +714,7 @@ function showNext() {
     const later = q.learnLater.length ? state.cards[q.learnLater[0]] : null;
     stage.innerHTML = later
       ? `<div class="done"><h2>先休息一下</h2><p class="muted">還有 ${q.learnLater.length} 張學習中的卡片，${Math.max(1, Math.round((later.due - Date.now())/MIN))} 分鐘後會再出現。</p><button class="flipbtn" id="backHome">回首頁</button></div>`
-      : `<div class="done"><h2>今天完成了</h2><p class="muted">明天再回來，演算法會把快忘記的卡片排給你。</p>${installHTML()}<button class="flipbtn" id="backHome">回首頁</button>${promoHTML()}${remindHTML()}</div>`;
+      : `<div class="done"><h2>今天完成了</h2><p class="muted">明天再回來，演算法會把快忘記的卡片排給你。</p>${unlearnedLeft() ? `<p class="muted small">還想多學？多上一堂只加今天的份量，學越多之後要複習的也越多。</p>` : ""}<div class="row">${moreBtnHTML("flipbtn")}<button class="ghost" id="backHome">回首頁</button></div>${installHTML()}${promoHTML()}${remindHTML()}</div>`;
     if (later) studyTimer = setTimeout(showNext, Math.max(5000, later.due - Date.now() - 20*MIN + 1000));
     return;
   }
@@ -741,6 +753,7 @@ function rate(g) {
 }
 stage.addEventListener("click", e => {
   if (e.target.closest("#backHome")) return closeStudy();
+  if (e.target.closest("[data-more]")) { addExtra(); lastCode = null; return showNext(); }
   if (e.target.closest("[data-install]")) return handleInstallClick(e);
   const r = e.target.closest("[data-g]"); if (r) return rate(+r.dataset.g);
   if (e.target.closest("#flipBtn") || e.target.closest("#theCard")) flip();
@@ -753,7 +766,7 @@ document.addEventListener("keydown", e => {
 });
 function openStudy() { $("study").hidden = false; document.body.style.overflow = "hidden"; lastCode = null; showNext(); }
 function closeStudy() { clearTimeout(studyTimer); $("study").hidden = true; document.body.style.overflow = ""; current = null; renderHome(); renderInstallHome(); renderRemindHome(); }
-$("startBtn").addEventListener("click", openStudy);
+$("startBtn").addEventListener("click", () => { if ($("startBtn").dataset.more) addExtra(); openStudy(); });
 $("closeBtn").addEventListener("click", closeStudy);
 
 // ---------- 快問快答與個人紀錄 ----------
