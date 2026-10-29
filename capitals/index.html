@@ -180,6 +180,7 @@ header p{max-width:62ch}
 .opts button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
 .opts button .en{font-family:var(--latin);font-style:italic;font-size:14px;color:var(--muted);line-height:1.2}
 .opts button.right .en,.opts button.wrong .en{color:rgba(255,255,255,.85)}
+.practice-head{display:flex;flex-direction:column;gap:4px;margin-bottom:-14px}
 /* 行事曆提醒 */
 .remind{display:flex;flex-direction:column;gap:8px;text-align:left;width:100%;max-width:440px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
 .remind b{font-family:var(--display);font-size:16px}
@@ -222,6 +223,21 @@ header p{max-width:62ch}
 
   <section id="installHome" hidden aria-label="加入主畫面"></section>
 
+  <section class="quizbox" aria-label="快問快答">
+    <div class="quiz-intro">
+      <span class="eyebrow">快問快答</span>
+      <h2>60 秒，你能答對幾個首都？</h2>
+      <p class="muted">四選一，答錯不扣分，但會浪費時間。玩完可以把成績圖分享給朋友，過幾天練完再回來刷新紀錄。</p>
+      <button class="start" id="quizBtn">開始 60 秒挑戰</button>
+      <p class="muted small" id="myBest"></p>
+    </div>
+    <div class="board">
+      <h3>我的最佳紀錄</h3>
+      <ol id="board"><li class="muted empty">還沒有紀錄，玩一次就會出現在這裡。</li></ol>
+    </div>
+  </section>
+
+  <div class="practice-head"><span class="eyebrow">每天練習</span><h2>想讓分數變高？每天翻幾張首都卡</h2></div>
   <section class="today" aria-label="今天的練習">
     <div class="counts">
       <div class="count due"><b id="nDue">0</b><span>今天要複習</span></div>
@@ -248,19 +264,6 @@ header p{max-width:62ch}
     <div><h3>隔天再回來</h3><p>新卡第一次答對，大約 1 到 3 天後才會再考。每答對一次，下次就隔得更久。</p></div>
   </section>
 
-  <section class="quizbox" aria-label="快問快答">
-    <div class="quiz-intro">
-      <span class="eyebrow">快問快答</span>
-      <h2>60 秒，你能答對幾個首都？</h2>
-      <p class="muted">四選一，答錯不扣分，但會浪費時間。玩完可以把成績圖分享給朋友，過幾天練完再回來刷新紀錄。</p>
-      <button class="start" id="quizBtn">開始 60 秒挑戰</button>
-      <p class="muted small" id="myBest"></p>
-    </div>
-    <div class="board">
-      <h3>我的最佳紀錄</h3>
-      <ol id="board"><li class="muted empty">還沒有紀錄，玩一次就會出現在這裡。</li></ol>
-    </div>
-  </section>
 
   <div class="legend" aria-label="格子底線的意思">
     <span><i style="background:var(--line)"></i>還沒學</span>
