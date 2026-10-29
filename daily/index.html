@@ -121,7 +121,7 @@ footer a{color:inherit}
   <header>
     <p class="eyebrow" id="dateline">學測詞彙</p>
     <h1>學測詞彙每日 10 題</h1>
-    <p class="muted">前 5 題中級、後 5 題中高級。點選項就對答案，看完中譯再往下一題。</p>
+    <p class="muted">所有選項都在大考中心《高中英文參考詞彙表》內。前 5 題英檢中級、後 5 題中高級，點選項就對答案。</p>
   </header>
 
   <div class="score" aria-live="polite"><b id="sc">0</b><span class="muted" id="scl">／10 答對</span><span class="bar"><i id="bar"></i></span></div>
@@ -173,7 +173,7 @@ footer a{color:inherit}
     cur.items.forEach((it, i) => {
       const q = document.createElement('article'); q.className = 'q';
       const parts = it.stem.split('_____');
-      q.innerHTML = `<div class="tag"><span class="lv">${it.level}</span></div>
+      q.innerHTML = `<div class="tag"><span class="lv">英檢${it.level}</span><span class="lv">學測第 ${it.ceec} 級</span></div>
         <p class="stem"><span class="n">${i+1}.</span>${esc(parts[0])}<span class="blank">&nbsp;</span>${esc(parts[1] || '')}</p>
         <div class="opts">${it.opts.map((o,j) => `<button class="opt" data-j="${j}"><span class="k">(${KEYS[j]})</span>${esc(o)}</button>`).join('')}</div>
         <div class="explain" hidden></div>`;
