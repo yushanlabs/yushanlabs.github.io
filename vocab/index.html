@@ -123,6 +123,7 @@ th,td{padding:7px 10px;text-align:right;border-bottom:1px solid var(--rule)}
 th:first-child,td:first-child{text-align:left;padding-left:0}
 thead th{font-family:var(--zh);font-weight:500;font-size:12.5px;color:var(--muted);border-bottom:1.5px solid var(--fg)}
 tfoot td{font-weight:600;border-top:1.5px solid var(--fg);border-bottom:0}
+@media (max-width:560px){table .wide{display:none} th,td{padding:7px 6px} table{font-size:13.5px}}
 .read{display:flex;flex-direction:column;gap:10px}
 .tierline{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
 .tierline .chip{font-size:12px;font-family:var(--sans);border:1px solid var(--data);color:var(--data);border-radius:999px;padding:1px 10px}
@@ -139,6 +140,9 @@ tfoot td{font-weight:600;border-top:1.5px solid var(--fg);border-bottom:0}
 .missed li{border:1px solid var(--rule);border-radius:4px;padding:3px 10px;font-size:14px;display:flex;gap:6px;align-items:baseline}
 .missed b{font-family:var(--sans);font-weight:600}
 .missed span{color:var(--muted)}
+.crossapp{font-size:14px;color:var(--muted)}
+a.inl{color:var(--data);font-weight:600;text-decoration:none;white-space:nowrap}
+a.inl:hover{text-decoration:underline}
 
 /* 方法與驗證 */
 details.methods{border-top:2px solid var(--fg)}
@@ -153,6 +157,8 @@ details.methods[open] summary::after{content:"收起"}
 .refs{margin:0;padding-left:1.4em;font-size:13.5px;color:var(--muted);display:flex;flex-direction:column;gap:4px}
 
 /* 關於 App */
+.app sup{font-size:.7em}
+.app .eq dd{white-space:normal}
 .app{border:1px solid var(--rule);border-radius:6px;padding:18px 20px;display:flex;flex-direction:column;gap:12px}
 .apphead{display:flex;gap:14px;align-items:center}
 .apphead img{width:56px;height:56px;border-radius:13px;flex:none}
@@ -235,9 +241,9 @@ footer a{color:inherit}
     <svg class="chart" id="lvChart" viewBox="0 0 600 244" role="img" aria-label="各級認得比例與 95% 信賴區間"></svg>
     <p class="caption">圖 2　各級認得比例 p̂ 與 95% 信賴區間；虛線為 80%（掌握門檻），低於門檻以橘色標示。</p>
     <div class="tablewrap"><table>
-      <thead><tr><th>級別</th><th>題數</th><th>答對</th><th>答錯</th><th>不知道</th><th>p̂</th><th>95% CI</th><th>估計字數</th></tr></thead>
+      <thead><tr><th>級別</th><th class="wide">題數</th><th>答對</th><th>答錯</th><th>不知道</th><th>p̂</th><th class="wide">95% CI</th><th>估計字數</th></tr></thead>
       <tbody id="levels"></tbody>
-      <tfoot><tr><td>合計</td><td id="fn"></td><td colspan="5"></td><td id="ft"></td></tr></tfoot>
+      <tfoot><tr><td>合計</td><td class="wide" id="fn"></td><td id="fc"></td><td id="fw"></td><td id="fi"></td><td></td><td class="wide"></td><td id="ft"></td></tr></tfoot>
     </table></div>
     <p class="note" id="clipNote" hidden>部分級別校正後的 p̂ 低於 0% 或高於 100%，圖表截斷顯示，合計仍以原始校正值計算（不偏估計，見方法第 2 節）。</p>
 
@@ -258,6 +264,7 @@ footer a{color:inherit}
   <section class="section" id="missBox" hidden>
     <h2>這一輪不會的字</h2>
     <ul class="missed" id="missed"></ul>
+    <p class="crossapp" id="missApp"></p>
   </section>
 
   <details class="methods" id="how" open>
@@ -303,6 +310,9 @@ footer a{color:inherit}
         <li>大學入學考試中心，《高中英文參考詞彙表》（111 學年度起適用），共 6,136 字、6 級。</li>
         <li>大學入學考試中心，學科能力測驗英文考科歷屆試題與答案，83–115 學年度（詞彙題 510 題）。</li>
         <li>Nation, I. S. P. 與 Beglar, D.（2007）的 Vocabulary Size Test，以及 Schmitt 等人（2001）的 Vocabulary Levels Test，均採分級抽樣設計。</li>
+        <li>Ebbinghaus, H.（1885）。<i>Über das Gedächtnis</i>（遺忘曲線）。</li>
+        <li>Cepeda, N. J. 等人（2006）。Distributed practice in verbal recall tasks: A review and quantitative synthesis. <i>Psychological Bulletin</i>, 132(3)。（間隔效應統合分析）</li>
+        <li>Open Spaced Repetition，FSRS（Free Spaced Repetition Scheduler）開源演算法。</li>
       </ol>
     </div>
   </details>
@@ -310,16 +320,24 @@ footer a{color:inherit}
   <section class="app" id="app">
     <div class="apphead">
       <img src="../assets/icons/gept.png" alt="記憶曲線單字 App 圖示">
-      <div><p class="kicker">關於記憶曲線單字</p><h2>知道該補哪一級之後，用 App 把字記住</h2></div>
+      <div><p class="kicker">記憶曲線單字</p><h2>同樣的科學方法，用在記憶上</h2></div>
     </div>
-    <p>記憶曲線單字是我們做的 iPhone／iPad 背單字 App，收錄全民英檢初級、中級、中高級約 7,800 字，涵蓋學測詞彙表 98% 的字。學測第 1–2 級大多在初級，第 3–4 級大多在中級，第 5–6 級大多在中高級。</p>
+    <p>這份測驗用分層抽樣和信賴區間估計你認得多少字。知道該補哪一級之後，下一步是記住；我們的 App「記憶曲線單字」用同樣講究證據的方法，決定每個字什麼時候該再考你。</p>
+    <dl class="eq">
+      <dt>記憶模型</dt><dd>FSRS：每個字追蹤難度 D、穩定度 S、記得的機率 R</dd>
+      <dt>遺忘曲線</dt><dd>R(t) = (1 + 19/81 · t/S)<sup>−0.5</sup></dd>
+      <dt>排程規則</dt><dd>R 降到 90% 時安排複習</dd>
+    </dl>
+    <svg class="chart" id="fcChart" viewBox="0 0 600 220" role="img" aria-label="遺忘曲線示意：每次複習後下降得更慢"></svg>
+    <p class="caption">圖 3　遺忘曲線示意。每次在 R 接近 90% 時複習（點），穩定度 S 變大，曲線下降得越來越慢；灰線為不複習的情況。</p>
+    <p class="muted" style="font-size:14.5px">間隔效應（spacing effect）是記憶研究中重複驗證最多的現象之一：分散複習比集中背誦記得更久。FSRS 是開源的記憶演算法，模型參數由大量真實複習紀錄擬合，可以公開檢驗。</p>
     <ul class="feat">
-      <li><b>快忘的時候才考你</b><span>FSRS 記憶模型估計每個字還記得的機率，在快要忘記時排進複習。</span></li>
+      <li><b>快忘的時候才考你</b><span>記得牢的字不會一直出現，時間都花在快忘的字上。</span></li>
       <li><b>認得和會拼分開記</b><span>英翻中和拼字是兩條獨立的記憶曲線。</span></li>
       <li><b>答錯馬上再考</b><span>同一回合再出現直到答對，之後間隔一次比一次長。</span></li>
+      <li><b>約 7,800 字，涵蓋詞彙表 98%</b><span>全民英檢初級、中級、中高級；學測第 1–2 級大多在初級，3–4 級在中級，5–6 級在中高級。</span></li>
       <li><b>例句和用法</b><span>美式發音、例句、中文翻譯和易混淆字說明。</span></li>
-      <li><b>離線、免帳號、不收集資料</b><span>沒有訂閱，學習紀錄只存在你的手機。</span></li>
-      <li><b>每一級先免費試 200 字</b><span>試過覺得適合再買。</span></li>
+      <li><b>離線、免帳號、不收集資料</b><span>沒有訂閱，每一級先免費試 200 字。</span></li>
     </ul>
     <div class="actions"><a class="btn solid" href="https://apps.apple.com/tw/app/id6821861109">在 App Store 下載</a></div>
   </section>
@@ -343,7 +361,7 @@ footer a{color:inherit}
 <script>
 (function(){
   const $=id=>document.getElementById(id);
-  const PER=10, LEVELS=[1,2,3,4,5,6], KEYS=['A','B','C','D'];
+  const PER=10, LEVELS=[1,2,3,4,5,6], KEYS=['A','B','C','D'], APP='https://apps.apple.com/tw/app/id6821861109';
   const GEPT={1:'初級',2:'初級',3:'中級',4:'中級',5:'中高級',6:'中高級'};
   const TIERS=[
     {max:1000,name:'起步',text:'詞彙表第 1 級還沒有完全掌握。這一級是國中最常用的字，學測閱讀的每一句幾乎都會用到，是所有級別的基礎。'},
@@ -353,6 +371,30 @@ footer a{color:inherit}
     {max:5000,name:'學測進階',text:'第 1–4 級大致掌握，可以應付大部分學測詞彙題。新課綱第 5 級的正解比例升到 20%，要拿高分需要補強第 5 級。'},
     {max:Infinity,name:'全面掌握',text:'詞彙表的大部分已經認得，學測單字不再是主要障礙。接下來可以把時間放在拼字、用法和閱讀速度；第 6 級在新課綱（111–115 年）的詞彙題正解中還沒有出現過，可以放在最後。'}
   ];
+  function fcChart(){
+    const svg=$('fcChart'); if(!svg) return;
+    const W=Math.max(280,svg.parentNode.clientWidth-0), H=220, L=40, R=W-10, T=12, B=H-30;
+    const days=60, X=t=>L+t/days*(R-L), Y=r=>T+(1-r)/(1-0.2)*(B-T);
+    const Rf=(t,S)=>Math.pow(1+19/81*t/S,-0.5);
+    svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+    let h='';
+    [1,.8,.6,.4,.2].forEach(r=>{ h+=`<line class="grid" x1="${L}" y1="${Y(r)}" x2="${R}" y2="${Y(r)}"/><text x="${L-6}" y="${Y(r)+4}" text-anchor="end">${Math.round(r*100)}%</text>`; });
+    for(let t=0;t<=60;t+=(W<420?20:10)) h+=`<text x="${X(t)}" y="${H-10}" text-anchor="middle">${t===0?'第 0 天':t}</text>`;
+    h+=`<line class="thr" x1="${L}" y1="${Y(.9)}" x2="${R}" y2="${Y(.9)}"/>`;
+    // 不複習
+    let p=''; for(let t=0;t<=days;t+=.5) p+=(t?'L':'M')+X(t).toFixed(1)+' '+Y(Rf(t,1)).toFixed(1);
+    h+=`<path d="${p}" fill="none" stroke="var(--rule2)" stroke-width="2"/>`;
+    // 有複習：每次在 R=90% 時複習，S 依序變大
+    const Ss=[1,3,9,25,60]; let t0=0, path='', pts='';
+    Ss.forEach((S,i)=>{ const dur=S; // R(S)=0.9
+      for(let u=0;u<=dur&&t0+u<=days;u+=.25) path+=((i===0&&u===0)?'M':'L')+X(t0+u).toFixed(1)+' '+Y(Rf(u,S)).toFixed(1);
+      if(t0+dur<=days){ pts+=`<circle class="pt" cx="${X(t0+dur)}" cy="${Y(.9)}" r="4"/>`; path+='L'+X(t0+dur).toFixed(1)+' '+Y(1).toFixed(1); }
+      t0+=dur; });
+    h+=`<path d="${path}" fill="none" stroke="var(--data)" stroke-width="2.5"/>`+pts;
+    h+=`<text x="${R}" y="${Y(.9)+16}" text-anchor="end">複習門檻 90%</text><text x="${R}" y="${Y(Rf(days,1))-8}" text-anchor="end">不複習</text>`;
+    svg.innerHTML=h;
+  }
+  fcChart(); window.addEventListener('resize',fcChart);
   let redraw=null; window.addEventListener('resize',()=>{ if(redraw&&!$('res').hidden) redraw(); });
   let bank=null, qs=[], cur=0, ans=[], used=new Set(), stats={}, rounds=0, lastTotal=0, last={}, cardBlob=null;
   const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
@@ -438,8 +480,10 @@ footer a{color:inherit}
     $('pm').textContent=`± ${r50(half).toLocaleString()}`;
     $('range').textContent=`95% 信賴區間 ${lo.toLocaleString()}–${hi.toLocaleString()} 字・樣本 ${rounds*60} 題`;
     redraw=()=>{ciChart(lastTotal,lo,hi,all); lvChart(per);};
-    $('levels').innerHTML=per.map(r=>`<tr><td>第 ${r.l} 級</td><td>${r.s.n}</td><td>${r.s.c}</td><td>${r.s.w}</td><td>${r.s.n-r.s.c-r.s.w}</td><td>${Math.round(r.raw*100)}%</td><td>${Math.round(r.lo*100)}–${Math.round(r.hi*100)}%</td><td>${fmt(r.n)}</td></tr>`).join('');
+    $('levels').innerHTML=per.map(r=>`<tr><td>第 ${r.l} 級</td><td class="wide">${r.s.n}</td><td>${r.s.c}</td><td>${r.s.w}</td><td>${r.s.n-r.s.c-r.s.w}</td><td>${Math.round(r.raw*100)}%</td><td class="wide">${Math.round(r.lo*100)}–${Math.round(r.hi*100)}%</td><td>${fmt(r.n)}</td></tr>`).join('');
     $('fn').textContent=rounds*60; $('ft').textContent=fmt(total);
+    const sum=k=>per.reduce((a,r)=>a+k(r.s),0);
+    $('fc').textContent=sum(s=>s.c); $('fw').textContent=sum(s=>s.w); $('fi').textContent=sum(s=>s.n-s.c-s.w);
     $('clipNote').hidden=!per.some(r=>r.raw<0||r.raw>1);
     const t=TIERS.findIndex(x=>total<x.max), T=TIERS[t];
     $('tier').textContent=T.name; $('tierNo').textContent=`第 ${t+1} 階／共 ${TIERS.length} 階・依估計字數劃分`;
@@ -447,7 +491,7 @@ footer a{color:inherit}
     const tips=[], focus=per.find(x=>x.p<0.8);
     if(focus){
       const gap=Math.round(sizes[focus.l]*(1-focus.p)/10)*10, weeks=Math.max(1,Math.ceil(gap/20/7));
-      tips.push(`優先補第 ${focus.l} 級。這一級估計還有約 ${gap.toLocaleString()} 字不熟，每天 20 個新字，大約 ${weeks} 週可以補完。這一級的字大多在全民英檢${GEPT[focus.l]}。`);
+      tips.push({t:`優先補第 ${focus.l} 級。這一級估計還有約 ${gap.toLocaleString()} 字不熟，每天 20 個新字，大約 ${weeks} 週可以補完。這一級的字大多在全民英檢${GEPT[focus.l]}。`,a:`在記憶曲線單字選「${GEPT[focus.l]}」開始 →`});
       const next=per.find(x=>x.l>focus.l&&x.p<0.8);
       if(next&&focus.p>=0.5) tips.push(`第 ${focus.l} 級已有一半以上，可以同時開始第 ${next.l} 級，但新字的比例以第 ${focus.l} 級為主。`);
     } else tips.push('詞彙表各級都在 80% 以上。接下來可以把重心放在拼字和用法：認得一個字，不代表寫作和翻譯時用得出來。');
@@ -455,8 +499,12 @@ footer a{color:inherit}
     if(wr>=10) tips.push(`這一輪答錯 ${wr} 題。不確定的字請選「不知道」，亂猜不會讓估計值變高，只會讓信賴區間變寬。`);
     if(rounds<3) tips.push(`目前的信賴區間是 ±${r50(half).toLocaleString()} 字，再做 60 題可以縮小到約 ±${r50(half*Math.sqrt(rounds/(rounds+1))).toLocaleString()} 字。`);
     tips.push('背一段時間後（例如一個月）再回來測一次，用兩次的結果確認進度。');
-    $('tips').innerHTML=''; tips.forEach(x=>{const li=document.createElement('li');li.textContent=x;$('tips').appendChild(li);});
+    $('tips').innerHTML=''; tips.forEach(x=>{const li=document.createElement('li');
+      if(typeof x==='string') li.textContent=x;
+      else { li.append(x.t+' '); const a=document.createElement('a'); a.href=APP; a.className='inl'; a.textContent=x.a; li.append(a); }
+      $('tips').appendChild(li);});
     last={lo,hi,half:r50(half),n:rounds*60,all};
+    { const p=$('missApp'); p.textContent=`這 ${missed.length} 個字都收錄在記憶曲線單字，FSRS 會在你快忘的時候排進複習。`; const a=document.createElement('a'); a.href=APP; a.className='inl'; a.textContent='下載 App →'; p.append(' ',a); }
     const m=$('missed'); m.innerHTML='';
     missed.forEach(q=>{const li=document.createElement('li');li.innerHTML='<b lang="en"></b><span></span>';li.firstChild.textContent=q.w;li.lastChild.textContent=q.a;m.appendChild(li);});
     $('more').hidden=left()<PER;
@@ -477,7 +525,7 @@ footer a{color:inherit}
     const W=1080,H=1350,c=document.createElement('canvas'); c.width=W; c.height=H; const g=c.getContext('2d');
     const SANS='"IBM Plex Sans","Noto Sans TC",sans-serif', ZH='"Noto Sans TC","PingFang TC",sans-serif';
     const FG='#1D2330', MU='#5D6675', RULE='#E2E6EC', DATA='#2B5DAA', BAND='#D5E2F4';
-    const txt='學測單字量估計個字信賴區間樣本題分層隨機抽樣詞彙表測測你的';
+    const txt='學測單字量估計個字信賴區間樣本題分層隨機抽樣詞彙表測測你的背：記憶曲線';
     try{ await Promise.all([document.fonts.load(`700 40px ${ZH}`,txt),document.fonts.load(`400 30px ${ZH}`,txt),document.fonts.load(`700 240px ${SANS}`,'0123456789,±–'),document.fonts.load(`500 30px ${SANS}`,'0123456789,±–.abcdefghijklmnopqrstuvwxyz/')]); }catch(e){}
     g.fillStyle='#FFFFFF'; g.fillRect(0,0,W,H);
     g.fillStyle=DATA; g.fillRect(0,0,W,14);
@@ -503,6 +551,7 @@ footer a{color:inherit}
     g.fillStyle=RULE; g.fillRect(90,1150,W-180,2);
     g.fillStyle=FG; g.font=`500 32px ${ZH}`; g.fillText('測測你的學測單字量',90,1220);
     g.fillStyle=DATA; g.font=`600 32px ${SANS}`; g.fillText('yushanlabs.github.io/vocab',90,1268);
+    g.textAlign='right'; g.fillStyle=MU; g.font=`400 26px ${ZH}`; g.fillText('背單字：記憶曲線單字 App',W-90,1268);
     return c;
   }
   $('share').onclick=async()=>{
@@ -514,9 +563,9 @@ footer a{color:inherit}
   };
   $('shareImg').onclick=async()=>{
     const f=new File([cardBlob],'學測單字量.png',{type:'image/png'});
-    try{ await navigator.share({files:[f],text:shareText()+' '+URL_}); }catch(e){ if(e.name!=='AbortError') toast('無法分享，請長按圖片儲存'); }
+    try{ await navigator.share({files:[f],text:shareText()+' '+URL_+'\n背單字用「記憶曲線單字」：'+APP}); }catch(e){ if(e.name!=='AbortError') toast('無法分享，請長按圖片儲存'); }
   };
-  $('copyLink').onclick=async()=>{ try{ await navigator.clipboard.writeText(shareText()+' '+URL_); toast('已複製，可以貼給朋友'); }catch(e){ toast(URL_); } };
+  $('copyLink').onclick=async()=>{ try{ await navigator.clipboard.writeText(shareText()+' '+URL_+'\n背單字用「記憶曲線單字」：'+APP); toast('已複製，可以貼給朋友'); }catch(e){ toast(URL_); } };
   $('closeShare').onclick=()=>{ $('shareBox').hidden=true; };
   $('shareBox').onclick=e=>{ if(e.target===$('shareBox')) $('shareBox').hidden=true; };
   document.addEventListener('keydown',e=>{
