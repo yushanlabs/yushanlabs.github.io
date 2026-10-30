@@ -75,7 +75,9 @@ details.how[open] summary::after{content:"－"}
 .how .body{display:flex;flex-direction:column;gap:12px;padding-bottom:16px}
 .how ol{margin:0;padding-left:1.3em;display:flex;flex-direction:column;gap:8px}
 .how .formula{background:var(--bg);border-radius:10px;padding:10px 14px;font-size:14px}
-.how h3{font-size:14px;margin:4px 0 0}
+.how h3{font-size:15px;margin:10px 0 0}
+.how sub{font-size:.7em}
+.how .formula{font-variant-numeric:tabular-nums;line-height:1.8;overflow-x:auto}
 
 /* 題目 */
 .prog{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
@@ -108,6 +110,7 @@ details.how[open] summary::after{content:"－"}
 .lv .track i{display:block;height:100%;border-radius:7px}
 .lv .n{text-align:right;white-space:nowrap;font-size:13px;font-variant-numeric:tabular-nums;color:var(--muted)}
 .lv.ok i{background:var(--good)} .lv.mid i{background:var(--warn)} .lv.low i{background:var(--wrong)}
+.note{font-size:13px}
 .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
 .legend span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px;background:var(--c)}
 .missed{display:flex;flex-wrap:wrap;gap:6px}
@@ -136,15 +139,16 @@ footer a{color:inherit}
 
   <!-- 開始 -->
   <section id="start" class="card">
-    <p class="lead">抽 60 個字，算出你認得多少學測單字。</p>
-    <p>大考中心《高中英文參考詞彙表》共 6,136 字，分成 6 級、每級約 1,000 字。每級隨機抽 10 個字，看英文選中文，用答對的比例推算整級：</p>
+    <p class="lead">分層隨機抽樣 60 個字，推估你認得多少學測單字。</p>
+    <p>母體是大考中心《高中英文參考詞彙表》的 6,136 字，依 6 個級別分層，每層約 1,000 字。每層隨機抽 10 個字，看英文選中文，用樣本比例估計整層：</p>
     <div class="math">
-      <p><span class="t">每級認得比例</span> = (答對 − 答錯 ÷ 3) ÷ 10</p>
-      <p><span class="t">你的單字量</span> = Σ（每級認得比例 × 該級字數）</p>
+      <p><span class="t">每層比例</span> p̂ = (答對 − 答錯 ÷ 3) ÷ 題數</p>
+      <p><span class="t">單字量</span> T̂ = Σ（每層 p̂ × 該層字數）</p>
+      <p><span class="t">95% 信賴區間</span> T̂ ± 1.96 × 標準誤</p>
     </div>
     <ul class="tips">
-      <li><b>為什麼扣「答錯 ÷ 3」？</b>四選一亂猜，平均每猜錯 3 題會猜對 1 題，扣掉的就是猜對的那一題。選「不知道」不扣分，所以不會就選「不知道」。</li>
-      <li><b>結果附誤差範圍。</b>60 題的 95% 範圍約 ±500 字，再做 60 題縮到 ±370 字，180 題 ±300 字。</li>
+      <li><b>「答錯 ÷ 3」是猜題校正。</b>四選一亂猜，猜對多得的分數剛好被猜錯扣的分數抵銷，所以 p̂ 是<b>不偏估計量</b>：不管你猜不猜，期望值都等於你真正認得的比例。證明在下面。</li>
+      <li><b>60 題的 95% 信賴區間約 ±500 字。</b>標準誤和題數的平方根成反比，做到 120 題縮到 ±370 字，180 題 ±300 字。不會就選「不知道」，亂猜不影響平均，但區間會變寬到約 ±800 字。</li>
     </ul>
     <div class="facts">
       <div><b>60</b><span>題</span></div>
@@ -182,6 +186,7 @@ footer a{color:inherit}
   <section id="detail" class="card" hidden>
     <h2>各級熟練度</h2>
     <div class="levels" id="levels"></div>
+    <p class="note muted" id="clipNote" hidden>有的級別猜錯較多，校正後低於 0%，長條顯示為 0%，但總數照實際的校正值計算，所以各級相加和總數不同（見統計原理第 2 點）。</p>
     <div class="legend"><span style="--c:var(--good)">80% 以上：穩了</span><span style="--c:var(--warn)">50–79%：半熟</span><span style="--c:var(--wrong)">不到 50%：還不熟</span></div>
   </section>
   <section id="missBox" class="card" hidden>
@@ -189,23 +194,43 @@ footer a{color:inherit}
     <div class="missed" id="missed"></div>
   </section>
 
-  <details class="how" id="how">
-    <summary>題庫、準確度與限制</summary>
+  <details class="how" id="how" open>
+    <summary>統計原理</summary>
     <div class="body">
-      <ol>
-        <li><b>題庫。</b>詞彙表（111 學年度起適用）每一級各選 150 個字，共 900 字。每輪從每級抽 10 個沒考過的字，所以可以連做 15 輪不重複。</li>
-        <li><b>選項。</b>錯的選項是同一級、同詞性的字，意思和答案沒有重疊，不會出現兩個都對的情況。</li>
-        <li><b>計算例子。</b>第 4 級答對 7 題、答錯 3 題：
-          <div class="formula">(7 − 3 ÷ 3) ÷ 10 = 60%　→　60% × 1,022 字 ≈ 613 字</div>6 級都這樣算，加起來就是你的單字量。</li>
-      </ol>
-      <h3>準不準？</h3>
-      <p class="muted">結果頁的「大約在…之間」是 95% 範圍：真正的字數有 95% 的機會落在裡面。這是用電腦模擬上萬次作答驗證過的，誤差大小由題數決定：</p>
-      <div class="formula">60 題：約 ±500 字　120 題：約 ±370 字　180 題：約 ±300 字</div>
-      <p class="muted">所以想要更準，就按「再做 60 題」，新的字會和前面的作答合起來算。不會的字亂猜，範圍會變大（60 題約 ±700 字），這也是為什麼不會要選「不知道」。分級抽樣是詞彙量測驗的標準方法，Vocabulary Levels Test 等研究用的測驗也是這樣設計的。</p>
-      <h3>可能偏高的地方</h3>
-      <p class="muted">如果你常用刪去法（刪掉一兩個選項再猜），答對機率比四分之一高，分數會稍微偏高。錯的選項刻意選了意思差很遠的字，比較好猜，也會讓結果略為偏高。</p>
-      <h3>測的是什麼？</h3>
-      <p class="muted">只測「看到英文知道中文意思」，不包括拼字、發音和用法。會認不一定會用，但認得是第一步。</p>
+      <h3>1. 分層隨機抽樣（stratified random sampling）</h3>
+      <p>把詞彙表當成母體，依級別分成 6 層，第 h 級有 N<sub>h</sub> 個字（約 1,000）。每層各隨機抽 n<sub>h</sub> 個字，用樣本比例 p̂<sub>h</sub> 估計整層的認得比例 p<sub>h</sub>：</p>
+      <div class="formula">T̂ = Σ N<sub>h</sub> · p̂<sub>h</sub>　（h = 1…6）</div>
+      <p>各層難度差異很大、層內相對一致，正是分層抽樣最有效的情況：如果 6,136 字混在一起做簡單隨機抽樣，可能剛好抽到太多簡單字或太多難字；分層後每一級都固定 10 題，層與層之間的差異不再進入誤差，估計量的變異數比簡單隨機抽樣小。</p>
+
+      <h3>2. 猜題校正與不偏性（correction for guessing）</h3>
+      <p>每一題的得分記為 X：答對 X = 1，答錯 X = −1/3，選「不知道」X = 0。假設認得的字一定答對，不認得的字有 g 的機率去猜（四選一，猜對機率 1/4），其餘選「不知道」。那麼一題的期望得分是：</p>
+      <div class="formula">E[X] = p + (1 − p)·g·¼·1 + (1 − p)·g·¾·(−⅓)<br>　　 = p + (1 − p)·g·(¼ − ¼) = p</div>
+      <p>猜對多得的分數，剛好被猜錯扣的分數抵銷。<b>不管你多常猜（g 是多少），每題得分的期望值都等於你真正認得的比例 p</b>，所以 p̂<sub>h</sub> = 這一級 X 的平均，是 p<sub>h</sub> 的<b>不偏估計量</b>（unbiased estimator），T̂ 也就是總字數的不偏估計量。猜題不會讓平均結果變高，只會讓變異數變大。</p>
+      <p class="muted">所以加總時每層用原始的 p̂，即使某一層略小於 0 也照算，最後總數才限制在 0 以上；如果每層先截斷在 0–100%，會系統性地高估（模擬中亂猜者平均高估 50–200 字）。結果頁的各級長條為了好讀才截斷顯示。</p>
+
+      <h3>3. 標準誤（standard error）</h3>
+      <p>同一級的題目互相獨立，所以樣本平均的變異數是單題變異數除以題數；各級也互相獨立，變異數可以直接相加：</p>
+      <div class="formula">Var(p̂<sub>h</sub>) = σ<sub>h</sub>² ÷ n<sub>h</sub>　　SE(T̂) = √( Σ N<sub>h</sub>² · σ<sub>h</sub>² ÷ n<sub>h</sub> )</div>
+      <p>σ<sub>h</sub>² 用你自己的作答估計（X² 的平均減去 X 平均的平方）。某一級全對或全不會時，樣本變異數會是 0，但這不代表毫無誤差，所以改用 (k + 0.5) ÷ (n + 1) 修正後的比例 p̃ 計算 p̃(1 − p̃)，避免範圍被低估。</p>
+
+      <h3>4. 95% 信賴區間（confidence interval）</h3>
+      <p>根據中央極限定理（central limit theorem），T̂ 是 60 個獨立得分的加權和，近似常態分布，所以結果頁的範圍是：</p>
+      <div class="formula">T̂ ± 1.96 × SE(T̂)</div>
+      <p>這就是高中數學學過的 95% 信賴區間：用同樣方法測很多次，約 95% 的區間會包含你真正的單字量。</p>
+
+      <h3>5. 樣本數與精確度</h3>
+      <p>SE 和 √n 成反比：題數變 2 倍，誤差變成 1/√2 ≈ 0.71 倍；變 3 倍，誤差變成 1/√3 ≈ 0.58 倍。所以 60 題約 ±500 字，120 題約 ±370 字，180 題約 ±300 字。每輪都抽沒考過的字，新的作答和前面的合併計算。</p>
+
+      <h3>6. 蒙地卡羅模擬驗證（Monte Carlo simulation）</h3>
+      <p>我們設定了國中程度、高一、高三、程度好四種學生，各自「誠實作答」和「不會就亂猜」，每種用電腦模擬數千次。結果：</p>
+      <div class="formula">偏誤（平均估計值 − 真實值）：誠實作答與亂猜都在 ±10 字以內<br>95% 信賴區間的實際涵蓋率（coverage）：93%–97%<br>區間半寬：誠實作答 60 題約 ±500 字；亂猜 60 題約 ±800 字</div>
+      <p>偏誤接近 0 驗證了第 2 點的不偏性；涵蓋率接近 95% 驗證了第 3、4 點的標準誤和信賴區間。</p>
+
+      <h3>題庫</h3>
+      <p class="muted">詞彙表（111 學年度起適用）每級隨機選出 150 個字作為題庫，共 900 字，可以連做 15 輪不重複。錯的選項是同一級、同詞性的字，意思和答案沒有重疊，不會有兩個都對的情況。估計的是「這 150 個字代表的整級」，題庫是隨機選的，所以能代表該級。</p>
+
+      <h3>模型假設與限制</h3>
+      <p class="muted">第 2 點假設不認得的字是四個選項平均亂猜。如果你會刪去法（刪掉一兩個選項再猜），猜對機率高於 1/4，分數會稍微偏高。另外，錯的選項刻意選了意思差很遠的字，比較好猜，也會讓結果略為偏高。測的是「看到英文知道中文意思」，不包括拼字、發音和用法。</p>
     </div>
   </details>
 
@@ -265,7 +290,8 @@ footer a{color:inherit}
     else finish();
   }
   // 某一級的分數：(答對 − 答錯/3) ÷ 題數；誤差用每題得分的變異數估計
-  function levelScore(s){ return Math.max(0,Math.min(1,(s.c-s.w/3)/s.n)); }
+  function levelRaw(s){ return (s.c-s.w/3)/s.n; }          // 不偏估計量（可能略小於 0）
+  function levelScore(s){ return Math.max(0,Math.min(1,levelRaw(s))); } // 顯示用
   function levelVar(s){
     const a=s.c/s.n, b=s.w/s.n, emp=a+b/9-(a-b/3)**2;
     const ps=(Math.max(0,s.c-s.w/3)+0.5)/(s.n+1);
@@ -277,8 +303,10 @@ footer a{color:inherit}
       if(ans[i]===q.a) s.c++; else { if(ans[i]!==null) s.w++; missed.push(q); } });
     rounds++;
     const sizes=bank.sizes; let total=0, v=0; const per=[];
-    LEVELS.forEach(l=>{ const s=stats[l], p=levelScore(s), n=p*sizes[l];
-      total+=n; v+=levelVar(s)*sizes[l]*sizes[l]; per.push({l,p,n:Math.round(n)}); });
+    LEVELS.forEach(l=>{ const s=stats[l], p=levelScore(s);
+      total+=levelRaw(s)*sizes[l]; v+=levelVar(s)*sizes[l]*sizes[l]; per.push({l,p,n:Math.round(p*sizes[l])}); });
+    total=Math.max(0,total);
+    $('clipNote').hidden=!LEVELS.some(l=>{const r=levelRaw(stats[l]);return r<0||r>1;});
     const half=1.96*Math.sqrt(v), all=Object.values(sizes).reduce((a,b)=>a+b,0);
     lastTotal=r50(total);
     $('total').textContent=lastTotal.toLocaleString();
