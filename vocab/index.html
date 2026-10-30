@@ -4,257 +4,264 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>學測單字量測驗</title>
-<meta name="description" content="60 題看英文選中文，用分層抽樣估出你認得多少學測單字、95% 信賴區間，以及每一級的熟練度。">
-<meta property="og:title" content="學測單字量測驗：你認得幾個學測單字？">
-<meta property="og:description" content="詞彙表 1–6 級各抽 10 字，60 題、約 5 分鐘，算出你的單字量、誤差範圍與該主攻的級別。">
+<meta name="description" content="以分層隨機抽樣估計你認得的學測單字數：60 題、約 5 分鐘，附 95% 信賴區間與各級估計。">
+<meta property="og:title" content="學測單字量測驗：你認得多少學測單字？">
+<meta property="og:description" content="詞彙表 6,136 字分 6 層抽樣，60 題估出你的單字量與 95% 信賴區間。">
 <meta property="og:image" content="https://yushanlabs.github.io/assets/icons/gept.png">
 <meta property="og:url" content="https://yushanlabs.github.io/vocab/">
-<meta name="theme-color" content="#F6F6F2">
+<meta name="theme-color" content="#FFFFFF">
 <link rel="icon" href="../assets/icons/gept.png" type="image/png">
 <link rel="apple-touch-icon" href="../assets/icons/gept.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600;900&family=Tinos:ital,wght@0,400;0,700;1,400&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700;900&family=Noto+Serif+TC:wght@700&display=swap">
 <style>
-/* Layout: 一份試卷——卷頭、作答注意事項、題目＋答案卡劃記、成績通知單、訂正、附錄（統計原理）、課後（App） */
+/* Layout: 統計報告——標題與重點數據列、方法摘要、作答、結果（估計值＋信賴區間圖、各層估計圖與表、解讀）、方法與驗證、資料來源、關於 App */
 :root{
-  --paper:#F6F6F2; --sheet:#FFFFFF; --ink:#18191B; --pencil:#55585E; --rule:#C9CAC4;
-  --card:#D2564A;      /* 答案卡的紅色印刷 */
-  --card-soft:#F7E3DF;
-  --redpen:#C22F2F;    /* 老師的紅筆 */
-  --zh:"Noto Serif TC","Songti TC","PMingLiU",serif;
-  --en:"Tinos","Times New Roman",Times,serif;
-  --ui:-apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;
+  --bg:#FFFFFF; --panel:#F5F7FA; --fg:#1D2330; --muted:#5D6675; --rule:#E2E6EC; --rule2:#C9D0DA;
+  --data:#2B5DAA;      /* 估計值、資料點 */
+  --band:#D5E2F4;      /* 信賴區間 */
+  --warn:#C2621F;      /* 低於門檻 */
+  --sans:"IBM Plex Sans","Noto Sans TC",-apple-system,BlinkMacSystemFont,"PingFang TC","Microsoft JhengHei",sans-serif;
+  --zh:"Noto Sans TC",-apple-system,BlinkMacSystemFont,"PingFang TC","Microsoft JhengHei",sans-serif;
+  --head:"Noto Serif TC","Songti TC",serif;
   color-scheme:light;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
-    --paper:#141516; --sheet:#1D1F21; --ink:#E9E8E3; --pencil:#A3A6AB; --rule:#3A3D40;
-    --card:#E07468; --card-soft:#3A2522; --redpen:#F0776B; color-scheme:dark;
+    --bg:#11151B; --panel:#181E26; --fg:#E4E8EE; --muted:#9AA4B2; --rule:#2A323D; --rule2:#3A4452;
+    --data:#7EA9E8; --band:#24364F; --warn:#E89257; color-scheme:dark;
   }
 }
 :root[data-theme="dark"]{
-  --paper:#141516; --sheet:#1D1F21; --ink:#E9E8E3; --pencil:#A3A6AB; --rule:#3A3D40;
-  --card:#E07468; --card-soft:#3A2522; --redpen:#F0776B; color-scheme:dark;
+  --bg:#11151B; --panel:#181E26; --fg:#E4E8EE; --muted:#9AA4B2; --rule:#2A323D; --rule2:#3A4452;
+  --data:#7EA9E8; --band:#24364F; --warn:#E89257; color-scheme:dark;
 }
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 html{-webkit-text-size-adjust:100%}
-body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--zh);font-size:16px;line-height:1.75;
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--zh);font-size:16px;line-height:1.7;
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
-  padding-block:calc(20px + env(safe-area-inset-top,0px)) calc(48px + env(safe-area-inset-bottom,0px))}
-.wrap{max-width:680px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+  padding-block:calc(14px + env(safe-area-inset-top,0px)) calc(48px + env(safe-area-inset-bottom,0px))}
+.wrap{max-width:720px;margin:0 auto;display:flex;flex-direction:column;gap:28px}
 p{margin:0}
-h1,h2,h3{margin:0;font-weight:900;text-wrap:balance}
+h1,h2,h3{margin:0;text-wrap:balance}
 button,a{font:inherit;color:inherit}
 button{cursor:pointer;touch-action:manipulation}
-button:focus-visible,a:focus-visible,summary:focus-visible{outline:2px solid var(--card);outline-offset:2px}
-.en{font-family:var(--en)}
-.muted{color:var(--pencil)}
+button:focus-visible,a:focus-visible,summary:focus-visible{outline:2px solid var(--data);outline-offset:2px}
+.num{font-family:var(--sans);font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
 sub{font-size:.7em}
+.kicker{font-family:var(--sans);font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--data)}
+h2{font-size:20px;font-weight:700}
+.section{display:flex;flex-direction:column;gap:12px}
+.section>h2{padding-bottom:8px;border-bottom:1px solid var(--rule)}
 
-/* 試卷紙 */
-.sheet{background:var(--sheet);border:1px solid var(--rule);padding:22px 20px;display:flex;flex-direction:column;gap:14px}
-@media (min-width:600px){.sheet{padding:28px 32px}}
+/* 頂端 */
+.top{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--muted);border-bottom:1px solid var(--rule);padding-bottom:10px}
+.top a{text-decoration:none}
+.top b{color:var(--fg);font-family:var(--sans);font-weight:600}
+.hero{display:flex;flex-direction:column;gap:10px}
+.hero h1{font-family:var(--head);font-size:clamp(30px,7vw,42px);line-height:1.25;font-weight:700}
+.dek{font-size:18px;color:var(--muted);max-width:36em}
+.facts{display:grid;grid-template-columns:repeat(4,1fr);border-top:2px solid var(--fg);border-bottom:1px solid var(--rule)}
+.facts div{padding:12px 10px;display:flex;flex-direction:column;gap:2px;border-left:1px solid var(--rule)}
+.facts div:first-child{border-left:0;padding-left:0}
+.facts b{font-family:var(--sans);font-size:24px;font-weight:600;line-height:1.2;font-variant-numeric:tabular-nums}
+.facts span{font-size:12.5px;color:var(--muted)}
+@media (max-width:520px){.facts{grid-template-columns:1fr 1fr}.facts div:nth-child(3){border-left:0;padding-left:0}.facts div:nth-child(n+3){border-top:1px solid var(--rule)}}
+.intro{display:flex;flex-direction:column;gap:10px;max-width:38em}
 
-/* 卷頭 */
-.cover{text-align:center;gap:10px;border-top:4px double var(--ink);border-bottom:4px double var(--ink)}
-.cover .sub{font-size:13px;letter-spacing:.3em;color:var(--pencil)}
-.cover h1{font-size:clamp(30px,8vw,44px);letter-spacing:.12em;line-height:1.25}
-.cover .meta{display:flex;justify-content:center;flex-wrap:wrap;gap:6px 18px;font-size:14px}
-.cover .meta span{border-bottom:1px solid var(--ink);padding:0 4px}
-.intro{display:flex;flex-direction:column;gap:10px;text-align:left;font-size:15.5px}
-.intro .q{font-weight:900;font-size:18px}
+/* 方法摘要 */
+.method{background:var(--panel);border:1px solid var(--rule);border-radius:6px;padding:18px 20px;display:flex;flex-direction:column;gap:12px}
+.eq{font-family:var(--sans);font-size:15.5px;display:grid;grid-template-columns:auto 1fr;gap:4px 14px;align-items:baseline;overflow-x:auto}
+.eq dt{color:var(--muted);font-family:var(--zh);font-size:14px;white-space:nowrap}
+.eq dd{margin:0;white-space:nowrap}
+.method ul{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:6px;font-size:15px}
+.go{align-self:flex-start;background:var(--data);color:var(--bg);border:0;border-radius:4px;padding:12px 28px;font-size:16px;font-weight:700}
 
-/* 作答注意事項 */
-.notice{border:2px solid var(--ink);padding:16px 18px;display:flex;flex-direction:column;gap:10px;background:var(--sheet)}
-.notice h2{font-size:17px;letter-spacing:.2em;text-align:center}
-.notice ol{margin:0;padding-left:1.5em;display:flex;flex-direction:column;gap:8px;font-size:15px}
-.formula{font-family:var(--en);font-size:16px;background:var(--paper);border-left:3px solid var(--ink);padding:8px 12px;line-height:1.9;overflow-x:auto}
-.formula .zh{font-family:var(--zh)}
-.go{align-self:center;background:var(--ink);color:var(--sheet);border:0;padding:12px 40px;font-size:17px;font-weight:900;letter-spacing:.3em}
-.go:hover{opacity:.9}
+/* 作答 */
+.qbox{border:1px solid var(--rule);border-radius:6px;padding:18px 20px 20px;display:flex;flex-direction:column;gap:16px}
+.qmeta{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);font-family:var(--sans)}
+.seg{display:grid;grid-template-columns:repeat(6,1fr);gap:4px}
+.seg div{height:6px;background:var(--rule);border-radius:3px;overflow:hidden}
+.seg i{display:block;height:100%;width:0;background:var(--data);transition:width .2s}
+.seglab{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;font-size:11px;color:var(--muted);text-align:center;margin-top:-10px;font-family:var(--sans)}
+.word{font-family:"IBM Plex Sans",var(--zh);font-size:clamp(36px,10vw,50px);font-weight:600;text-align:center;line-height:1.15;padding:8px 0 2px;overflow-wrap:anywhere}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+@media (max-width:460px){.opts{grid-template-columns:1fr}}
+.opt{display:flex;gap:10px;align-items:center;text-align:left;background:var(--bg);border:1px solid var(--rule2);border-radius:4px;padding:12px 14px;font-size:17px;min-height:52px}
+.opt .k{font-family:var(--sans);font-size:12px;color:var(--muted);width:1em;flex:none}
+.opt:hover{border-color:var(--data)}
+.opt.pick{border-color:var(--data);background:var(--band)}
+.opt.idk{grid-column:1/-1;color:var(--muted);font-size:15px;justify-content:center;background:var(--panel);border-color:var(--rule)}
+.back{align-self:flex-start;background:none;border:0;color:var(--muted);font-size:14px;padding:0}
 
-/* 題目 */
-.qhead{display:flex;justify-content:space-between;align-items:baseline;font-size:14px;color:var(--pencil);border-bottom:1px solid var(--rule);padding-bottom:8px}
-.qhead b{color:var(--ink);font-size:16px}
-.word{font-family:var(--en);font-size:clamp(36px,11vw,52px);font-weight:700;text-align:center;line-height:1.15;padding:10px 0 4px;overflow-wrap:anywhere}
-.prompt{text-align:center;font-size:14px;color:var(--pencil)}
-.opts{display:flex;flex-direction:column;gap:6px}
-.opt{display:flex;gap:12px;align-items:center;text-align:left;background:none;border:0;border-bottom:1px dotted var(--rule);padding:10px 4px;font-size:18px;min-height:50px}
-.opt .k{font-family:var(--en);font-size:17px;width:2.2em;flex:none}
-.opt:hover .k,.opt.pick .k{color:var(--card)}
-.opt.pick{background:var(--card-soft)}
-.opt.idk{color:var(--pencil);font-size:16px}
-.back{align-self:flex-start;background:none;border:0;color:var(--pencil);font-size:14px;padding:2px 0;text-decoration:underline}
+/* 結果 */
+.est{display:flex;flex-direction:column;gap:4px}
+.est .lab{font-size:14px;color:var(--muted)}
+.big{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.big b{font-family:var(--sans);font-size:clamp(54px,15vw,76px);font-weight:700;line-height:1;font-variant-numeric:tabular-nums;color:var(--data)}
+.big .pm{font-family:var(--sans);font-size:22px;color:var(--muted);font-variant-numeric:tabular-nums}
+.big .u{font-size:18px;font-weight:500}
+.ci{font-size:14px;color:var(--muted)}
+svg.chart{width:100%;height:auto;display:block;overflow:visible}
+svg text{font-family:var(--sans);font-size:11.5px;fill:var(--muted)}
+svg .axis{stroke:var(--rule2);stroke-width:1}
+svg .grid{stroke:var(--rule);stroke-width:1}
+svg .band{fill:var(--band)}
+svg .whisk{stroke:var(--data);stroke-width:2}
+svg .whisk.low{stroke:var(--warn)}
+svg .pt{fill:var(--data)} svg .pt.low{fill:var(--warn)}
+svg .thr{stroke:var(--muted);stroke-dasharray:3 3;stroke-width:1}
+svg .lab{fill:var(--fg);font-size:13px;font-family:var(--zh)}
+svg .val{fill:var(--fg);font-weight:600;font-size:12.5px}
+.caption{font-size:12.5px;color:var(--muted)}
+.tablewrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px;font-family:var(--sans);font-variant-numeric:tabular-nums;white-space:nowrap}
+th,td{padding:7px 10px;text-align:right;border-bottom:1px solid var(--rule)}
+th:first-child,td:first-child{text-align:left;padding-left:0}
+thead th{font-family:var(--zh);font-weight:500;font-size:12.5px;color:var(--muted);border-bottom:1.5px solid var(--fg)}
+tfoot td{font-weight:600;border-top:1.5px solid var(--fg);border-bottom:0}
+.read{display:flex;flex-direction:column;gap:10px}
+.tierline{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.tierline .chip{font-size:12px;font-family:var(--sans);border:1px solid var(--data);color:var(--data);border-radius:999px;padding:1px 10px}
+.tierline b{font-size:20px}
+.tierline .of{font-size:13px;color:var(--muted)}
+.read h3{font-size:15px;font-weight:700;margin-top:4px}
+.read ol{margin:0;padding-left:1.4em;display:flex;flex-direction:column;gap:6px;font-size:15px}
+.note{font-size:13px;color:var(--muted)}
+.actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.btn{border:1px solid var(--rule2);background:var(--bg);border-radius:4px;padding:10px 18px;font-weight:600;font-size:15px;text-decoration:none;display:inline-block;text-align:center}
+.btn.solid{background:var(--data);color:var(--bg);border-color:var(--data)}
+.link{background:none;border:0;color:var(--muted);font-size:13px;text-decoration:underline;padding:0}
+.missed{display:flex;flex-wrap:wrap;gap:6px;margin:0;padding:0;list-style:none}
+.missed li{border:1px solid var(--rule);border-radius:4px;padding:3px 10px;font-size:14px;display:flex;gap:6px;align-items:baseline}
+.missed b{font-family:var(--sans);font-weight:600}
+.missed span{color:var(--muted)}
 
-/* 答案卡劃記 */
-.answercard{border:1.5px solid var(--card);padding:10px 12px;display:flex;flex-direction:column;gap:6px;font-family:var(--ui)}
-.answercard .t{font-size:11px;letter-spacing:.25em;color:var(--card);text-align:center}
-.acrow{display:grid;grid-template-columns:2.6em repeat(10,1fr);gap:4px;align-items:center}
-.acrow .lab{font-size:11px;color:var(--card)}
-.bub{height:12px;border:1.2px solid var(--card);border-radius:50%;max-width:22px;justify-self:center;width:100%}
-.bub.on{background:var(--ink);border-color:var(--ink)}
-.bub.cur{box-shadow:0 0 0 2px var(--card-soft)}
-.bub.idk{background:repeating-linear-gradient(45deg,var(--pencil) 0 1.5px,transparent 1.5px 4px);border-color:var(--pencil)}
+/* 方法與驗證 */
+details.methods{border-top:2px solid var(--fg)}
+details.methods summary{cursor:pointer;font-weight:700;font-size:20px;padding:14px 0 10px;list-style:none;display:flex;justify-content:space-between;align-items:baseline}
+details.methods summary::-webkit-details-marker{display:none}
+details.methods summary::after{content:"展開";font-size:13px;font-weight:400;color:var(--muted)}
+details.methods[open] summary::after{content:"收起"}
+.methods .body{display:flex;flex-direction:column;gap:10px;padding-bottom:8px;font-size:15px;max-width:40em}
+.methods h3{font-size:16px;margin-top:12px}
+.methods .muted{font-size:14.5px}
+.formula{font-family:var(--sans);font-size:15px;background:var(--panel);border-left:3px solid var(--data);padding:8px 12px;line-height:1.9;overflow-x:auto;font-variant-numeric:tabular-nums}
+.refs{margin:0;padding-left:1.4em;font-size:13.5px;color:var(--muted);display:flex;flex-direction:column;gap:4px}
 
-/* 成績通知單 */
-.report h2{font-size:18px;letter-spacing:.3em;text-align:center;border-bottom:2px solid var(--ink);padding-bottom:8px}
-.score{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 0}
-.score .lab{font-size:14px;color:var(--pencil)}
-.circled{position:relative;display:inline-block;padding:6px 26px}
-.circled b{font-family:var(--en);font-size:clamp(52px,15vw,72px);color:var(--redpen);font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
-.circled svg{position:absolute;inset:-6px -4px;width:calc(100% + 8px);height:calc(100% + 12px);overflow:visible;pointer-events:none}
-.circled path{fill:none;stroke:var(--redpen);stroke-width:2.5;stroke-linecap:round}
-.score .unit{font-size:16px;font-weight:600}
-.score .range{font-size:14px;color:var(--pencil);text-align:center}
-.verdict{border-top:1px dashed var(--rule);padding-top:14px;display:flex;flex-direction:column;gap:10px}
-.tier{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
-.tier .lab{font-size:13px;color:var(--pencil);border:1px solid var(--pencil);padding:0 6px}
-.tier b{font-size:22px;color:var(--redpen)}
-.tier .of{font-size:13px;color:var(--pencil)}
-.verdict h3{font-size:15px;letter-spacing:.2em}
-.verdict ol{margin:0;padding-left:1.4em;display:flex;flex-direction:column;gap:6px;font-size:15px}
-table.grades{width:100%;border-collapse:collapse;font-size:15px;font-variant-numeric:tabular-nums}
-.grades th,.grades td{border:1px solid var(--ink);padding:6px 8px;text-align:center}
-.grades th{font-weight:600;background:var(--paper);font-size:13px}
-.grades td.bar{width:38%;text-align:left}
-.grades .bw{display:flex;align-items:center;gap:8px}
-.grades .bw span{width:3em;text-align:right;flex:none}
-.grades .track{flex:1;height:10px;background:var(--paper);border:1px solid var(--rule)}
-.grades .track i{display:block;height:100%;background:var(--ink)}
-.grades tr.low .track i{background:var(--redpen)}
-.grades .mark{font-family:var(--en);font-weight:700}
-.grades tr.ok .mark{color:var(--ink)} .grades tr.mid .mark{color:var(--pencil)} .grades tr.low .mark{color:var(--redpen)}
-.legend{font-size:12px;color:var(--pencil);font-family:var(--ui)}
-.note{font-size:13px;color:var(--pencil)}
-.row{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
-.btn{border:1.5px solid var(--ink);background:var(--sheet);padding:10px 20px;font-weight:600;font-size:15px;text-decoration:none;display:inline-block;text-align:center}
-.btn.solid{background:var(--ink);color:var(--sheet)}
-.link{background:none;border:0;color:var(--pencil);font-size:13px;text-decoration:underline;align-self:center}
-
-/* 訂正 */
-.fix h2{font-size:17px;letter-spacing:.2em}
-.fixlist{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:2px 16px;margin:0;padding:0;list-style:none}
-.fixlist li{border-bottom:1px solid var(--rule);padding:6px 0;display:flex;gap:8px;align-items:baseline;min-width:0}
-.fixlist .en{font-weight:700;font-size:17px}
-.fixlist span{font-size:14px;color:var(--redpen)}
-
-/* 附錄 */
-details.appendix{background:var(--sheet);border:1px solid var(--rule);padding:4px 20px}
-@media (min-width:600px){details.appendix{padding:4px 32px}}
-details.appendix summary{cursor:pointer;font-weight:900;font-size:17px;letter-spacing:.15em;padding:14px 0;list-style:none;display:flex;justify-content:space-between;border-bottom:1px solid transparent}
-details.appendix[open] summary{border-bottom-color:var(--ink)}
-details.appendix summary::-webkit-details-marker{display:none}
-details.appendix summary::after{content:"展開";font-size:13px;letter-spacing:0;font-weight:400;color:var(--pencil)}
-details.appendix[open] summary::after{content:"收起"}
-.appendix .body{display:flex;flex-direction:column;gap:10px;padding:14px 0 22px;font-size:15px}
-.appendix h3{font-size:16px;margin-top:10px}
-.appendix .muted{font-size:14.5px}
-
-/* 課後：App */
-.app{border:2px dashed var(--ink)}
+/* 關於 App */
+.app{border:1px solid var(--rule);border-radius:6px;padding:18px 20px;display:flex;flex-direction:column;gap:12px}
 .apphead{display:flex;gap:14px;align-items:center}
-.apphead img{width:64px;height:64px;border-radius:15px;flex:none}
-.apphead .t{font-size:12px;letter-spacing:.25em;color:var(--pencil)}
-.apphead h2{font-size:20px}
-.feat{margin:0;padding-left:1.4em;display:flex;flex-direction:column;gap:10px}
-.feat b{display:block;font-size:15.5px}
-.feat span{font-size:14.5px;color:var(--pencil)}
-.appcta{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
-@media (max-width:480px){.appcta .btn{width:100%}}
-footer{font-size:12px;color:var(--pencil);text-align:center;font-family:var(--ui)}
+.apphead img{width:56px;height:56px;border-radius:13px;flex:none}
+.apphead h2{font-size:18px}
+.feat{margin:0;padding:0;list-style:none;display:grid;grid-template-columns:1fr 1fr;gap:12px 20px}
+@media (max-width:560px){.feat{grid-template-columns:1fr}}
+.feat b{display:block;font-size:15px}
+.feat span{font-size:14px;color:var(--muted)}
+footer{font-size:12px;color:var(--muted);text-align:center;border-top:1px solid var(--rule);padding-top:14px}
 footer a{color:inherit}
-.modal{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;
+
+.modal{position:fixed;inset:0;z-index:20;background:rgba(10,14,20,.6);display:flex;align-items:center;justify-content:center;
   padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
-.modalin{max-width:420px;width:100%;max-height:100%;overflow:auto;align-items:center}
+.modalin{background:var(--bg);border-radius:8px;max-width:400px;width:100%;max-height:100%;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:12px;align-items:center}
 .modalin img{width:100%;height:auto;border:1px solid var(--rule);display:block}
 .modalin .hint{font-size:13px;text-align:center}
-.toast{z-index:30;position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--sheet);
-  padding:8px 16px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;font-family:var(--ui)}
+.toast{z-index:30;position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);
+  padding:8px 16px;border-radius:4px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none}
 .toast.on{opacity:1}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
 <body>
 <div class="wrap">
+  <div class="top"><a href="../"><b>Yushan Labs</b>　詞彙統計</a><a href="../daily/">每日 10 題 →</a></div>
 
-  <!-- 卷頭 -->
-  <header class="sheet cover">
-    <p class="sub">學測英文・詞彙</p>
-    <h1>單字量測驗卷</h1>
-    <div class="meta"><span>共 60 題</span><span>作答時間約 5 分鐘</span><span>範圍：詞彙表第 1–6 級</span></div>
-    <div class="intro">
-      <p class="q">背單字最大的問題，是不知道自己現在在哪裡。</p>
-      <p>學測英文的單字範圍是大考中心《高中英文參考詞彙表》。我們整理了 83 到 115 年的歷屆學測詞彙題，新課綱（111 年起）的正解有 88% 落在第 3 到 5 級。與其拿起單字書從 A 背起，不如先知道每一級你已經認得多少，把時間花在還不熟的那一級。</p>
-      <p>這份測驗用統計抽樣，60 題、5 分鐘，算出你的單字量、誤差範圍和各級熟練度。</p>
-    </div>
+  <header class="hero">
+    <p class="kicker">Vocabulary Size Estimate</p>
+    <h1>學測單字量測驗</h1>
+    <p class="dek">以分層隨機抽樣估計你認得的學測單字數，附 95% 信賴區間與各級估計。</p>
   </header>
 
-  <!-- 作答注意事項 -->
-  <section class="notice" id="start">
-    <h2>作答注意事項</h2>
-    <ol>
-      <li><b>分層隨機抽樣。</b>詞彙表共 6,136 字，依 6 個級別分層，每層約 1,000 字。每層隨機抽 10 個字，看英文選中文。</li>
-      <li><b>計分方式。</b>用樣本比例估計整層，再加總成你的單字量：
-        <div class="formula"><span class="zh">每層比例</span> p̂ = (<span class="zh">答對</span> − <span class="zh">答錯</span> ÷ 3) ÷ <span class="zh">題數</span><br><span class="zh">單字量</span> T̂ = Σ N<sub>h</sub> · p̂<sub>h</sub><br><span class="zh">95% 信賴區間</span> T̂ ± 1.96 × SE</div></li>
-      <li><b>答錯倒扣 1/3。</b>這是猜題校正：四選一亂猜，猜對多得的分數剛好被猜錯扣的分數抵銷，所以 p̂ 是<b>不偏估計量</b>。不會請劃 (E) 不知道，不扣分。</li>
-      <li><b>誤差範圍。</b>60 題的 95% 信賴區間約 ±500 字；標準誤與題數的平方根成反比，120 題縮到 ±370 字，180 題 ±300 字。亂猜不影響平均，但區間會變寬到約 ±800 字。</li>
-      <li>作答時不顯示對錯，交卷後一起看成績。證明與驗證見卷末附錄。</li>
-    </ol>
-    <button class="go" id="go">開始作答</button>
+  <div class="facts">
+    <div><b>6,136</b><span>母體：詞彙表字數</span></div>
+    <div><b>6</b><span>分層：第 1–6 級</span></div>
+    <div><b>60</b><span>樣本：每層 10 題</span></div>
+    <div><b>±500</b><span>95% 信賴區間（60 題）</span></div>
+  </div>
+
+  <section class="intro">
+    <p><b>背單字最大的問題，是不知道自己現在在哪裡。</b></p>
+    <p>學測英文的單字範圍是大考中心《高中英文參考詞彙表》。我們整理了 83 到 115 年的歷屆學測詞彙題，新課綱（111 年起）的正解有 88% 落在第 3 到 5 級。與其拿起單字書從 A 背起，不如先知道每一級你已經認得多少，把時間花在還不熟的那一級。</p>
   </section>
 
-  <!-- 題目 -->
-  <section class="sheet" id="quiz" hidden>
-    <div class="qhead"><span><b id="pn">第 1 題</b>　<span id="lvtag"></span></span><span id="round"></span></div>
+  <section class="method" id="start">
+    <h2>方法摘要</h2>
+    <dl class="eq">
+      <dt>每層比例</dt><dd>p̂<sub>h</sub> = (答對 − 答錯 ÷ 3) ÷ n<sub>h</sub></dd>
+      <dt>單字量</dt><dd>T̂ = Σ N<sub>h</sub> · p̂<sub>h</sub></dd>
+      <dt>95% 信賴區間</dt><dd>T̂ ± 1.96 · SE(T̂)</dd>
+    </dl>
+    <ul>
+      <li><b>分層隨機抽樣：</b>詞彙表依級別分成 6 層，每層約 1,000 字，各抽 10 字，看英文選中文。</li>
+      <li><b>猜題校正：</b>答錯扣 1/3 題，使 p̂ 成為不偏估計量，猜不猜都不影響期望值。不會請選「不知道」，不扣分。</li>
+      <li><b>精確度：</b>標準誤與題數的平方根成反比。60 題約 ±500 字，120 題 ±370 字，180 題 ±300 字。</li>
+    </ul>
+    <button class="go" id="go">開始測驗（60 題，約 5 分鐘）</button>
+  </section>
+
+  <section class="qbox" id="quiz" hidden>
+    <div class="qmeta"><span id="pn">1 / 60</span><span id="lvtag"></span></div>
+    <div class="seg" id="seg"></div>
+    <div class="seglab"><span>第1級</span><span>第2級</span><span>第3級</span><span>第4級</span><span>第5級</span><span>第6級</span></div>
     <p class="word" id="word" lang="en"></p>
-    <p class="prompt">下列何者最接近這個字的意思？</p>
     <div class="opts" id="opts"></div>
-    <button class="back" id="back" hidden>回上一題</button>
-    <div class="answercard" aria-hidden="true">
-      <p class="t">答　案　卡</p>
-      <div id="card"></div>
-    </div>
+    <button class="back" id="back" hidden>← 上一題</button>
   </section>
 
-  <!-- 成績通知單 -->
-  <section class="sheet report" id="res" hidden>
-    <h2>成績通知單</h2>
-    <div class="score">
-      <p class="lab">估計單字量</p>
-      <span class="circled"><b id="total">0</b><svg viewBox="0 0 100 60" preserveAspectRatio="none"><path d="M8 32 C 6 12, 40 3, 62 5 C 86 7, 97 20, 94 35 C 91 52, 60 58, 38 56 C 16 54, 3 44, 9 26 C 12 18, 22 12, 30 10"/></svg></span>
-      <p class="unit">個學測單字</p>
-      <p class="range" id="range"></p>
+  <section class="section" id="res" hidden>
+    <h2>結果</h2>
+    <div class="est">
+      <p class="lab">估計單字量（點估計）</p>
+      <p class="big"><b id="total">0</b><span class="pm" id="pm"></span><span class="u">字</span></p>
+      <p class="ci" id="range"></p>
     </div>
-    <table class="grades">
-      <thead><tr><th>級別</th><th>認得比例</th><th>估計字數</th><th>等第</th></tr></thead>
+    <svg class="chart" id="ciChart" viewBox="0 0 600 64" role="img" aria-label="估計值與 95% 信賴區間"></svg>
+    <p class="caption">圖 1　點為估計值，色帶為 95% 信賴區間；橫軸為詞彙表總字數 0–6,136。</p>
+
+    <h2 style="font-size:17px;border:0;padding:0;margin-top:8px">各級估計</h2>
+    <svg class="chart" id="lvChart" viewBox="0 0 600 244" role="img" aria-label="各級認得比例與 95% 信賴區間"></svg>
+    <p class="caption">圖 2　各級認得比例 p̂ 與 95% 信賴區間；虛線為 80%（掌握門檻），低於門檻以橘色標示。</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>級別</th><th>題數</th><th>答對</th><th>答錯</th><th>不知道</th><th>p̂</th><th>95% CI</th><th>估計字數</th></tr></thead>
       <tbody id="levels"></tbody>
-    </table>
-    <p class="legend">等第：甲＝80% 以上（穩了）　乙＝50–79%（半熟）　丙＝不到 50%（還不熟）</p>
-    <p class="note" id="clipNote" hidden>有的級別猜錯較多，校正後低於 0%，表中顯示為 0%，但總數照實際的校正值計算，所以各級相加和總數不同（見附錄第 2 點）。</p>
-    <div class="verdict">
-      <p class="tier"><span class="lab">等級</span><b id="tier"></b><span class="of" id="tierNo"></span></p>
+      <tfoot><tr><td>合計</td><td id="fn"></td><td colspan="5"></td><td id="ft"></td></tr></tfoot>
+    </table></div>
+    <p class="note" id="clipNote" hidden>部分級別校正後的 p̂ 低於 0% 或高於 100%，圖表截斷顯示，合計仍以原始校正值計算（不偏估計，見方法第 2 節）。</p>
+
+    <div class="read">
+      <h2 style="font-size:17px;border:0;padding:0;margin-top:8px">解讀</h2>
+      <p class="tierline"><span class="chip">程度</span><b id="tier"></b><span class="of" id="tierNo"></span></p>
       <p id="evalText"></p>
       <h3>建議</h3>
       <ol id="tips"></ol>
     </div>
-    <div class="row">
-      <button class="btn solid" id="share">分享成績</button>
-      <button class="btn" id="more">再做 60 題，結果更準</button>
+    <div class="actions">
+      <button class="btn solid" id="share">分享結果</button>
+      <button class="btn" id="more">再做 60 題，縮小信賴區間</button>
+      <button class="link" id="restart">重新開始</button>
     </div>
-    <button class="link" id="restart">全部重新作答</button>
   </section>
 
-  <section class="sheet fix" id="missBox" hidden>
-    <h2>訂正</h2>
-    <p class="muted" style="font-size:14px">這一輪答錯或不知道的字：</p>
-    <ul class="fixlist" id="missed"></ul>
+  <section class="section" id="missBox" hidden>
+    <h2>這一輪不會的字</h2>
+    <ul class="missed" id="missed"></ul>
   </section>
 
-  <!-- 附錄 -->
-  <details class="appendix" id="how" open>
-    <summary>附錄　統計原理</summary>
+  <details class="methods" id="how" open>
+    <summary>方法與驗證</summary>
     <div class="body">
       <h3>1. 分層隨機抽樣（stratified random sampling）</h3>
       <p>把詞彙表當成母體，依級別分成 6 層，第 h 級有 N<sub>h</sub> 個字（約 1,000）。每層各隨機抽 n<sub>h</sub> 個字，用樣本比例 p̂<sub>h</sub> 估計整層的認得比例 p<sub>h</sub>：</p>
@@ -290,38 +297,43 @@ footer a{color:inherit}
 
       <h3>模型假設與限制</h3>
       <p class="muted">第 2 點假設不認得的字是四個選項平均亂猜。如果你會刪去法（刪掉一兩個選項再猜），猜對機率高於 1/4，分數會稍微偏高。另外，錯的選項刻意選了意思差很遠的字，比較好猜，也會讓結果略為偏高。測的是「看到英文知道中文意思」，不包括拼字、發音和用法。</p>
+    
+      <h3>資料來源</h3>
+      <ol class="refs">
+        <li>大學入學考試中心，《高中英文參考詞彙表》（111 學年度起適用），共 6,136 字、6 級。</li>
+        <li>大學入學考試中心，學科能力測驗英文考科歷屆試題與答案，83–115 學年度（詞彙題 510 題）。</li>
+        <li>Nation, I. S. P. 與 Beglar, D.（2007）的 Vocabulary Size Test，以及 Schmitt 等人（2001）的 Vocabulary Levels Test，均採分級抽樣設計。</li>
+      </ol>
     </div>
   </details>
 
-  <!-- 課後 -->
-  <section class="sheet app" id="app">
+  <section class="app" id="app">
     <div class="apphead">
       <img src="../assets/icons/gept.png" alt="記憶曲線單字 App 圖示">
-      <div><p class="t">課後練習</p><h2>用「記憶曲線單字」把字留下來</h2></div>
+      <div><p class="kicker">關於記憶曲線單字</p><h2>知道該補哪一級之後，用 App 把字記住</h2></div>
     </div>
-    <p>知道該主攻哪一級之後，下一步是記住。記憶曲線單字是我們做的 iPhone／iPad 背單字 App，收錄全民英檢初級、中級、中高級約 7,800 字，涵蓋學測詞彙表 98% 的字。學測第 1–2 級大多在初級，第 3–4 級大多在中級，第 5–6 級大多在中高級。</p>
-    <ol class="feat">
-      <li><b>快忘的時候才考你</b><span>用 FSRS 記憶模型估計每個字還記得的機率，在快要忘記時排進複習。記得牢的字不會一直出現，時間都花在快忘的字上。</span></li>
-      <li><b>認得和會拼分開記</b><span>英翻中和拼字是兩條獨立的記憶曲線。看得懂但拼不出來的字，會在拼字練習裡繼續出現。</span></li>
-      <li><b>答錯馬上再考</b><span>答錯的字會在同一回合再出現，直到答對；之後隔天、幾天後、幾週後再確認，間隔一次比一次長。</span></li>
-      <li><b>每個字都有例句和用法</b><span>美式發音、例句、中文翻譯和易混淆字說明，翻面就看得到。</span></li>
-      <li><b>離線、免帳號、不收集資料</b><span>不用註冊，沒有訂閱，學習紀錄只存在你的手機。</span></li>
-    </ol>
-    <div class="appcta">
-      <a class="btn solid" href="https://apps.apple.com/tw/app/id6821861109">在 App Store 下載</a>
-      <span class="muted" style="font-size:14px">每一級都可以先免費試 200 個字</span>
-    </div>
+    <p>記憶曲線單字是我們做的 iPhone／iPad 背單字 App，收錄全民英檢初級、中級、中高級約 7,800 字，涵蓋學測詞彙表 98% 的字。學測第 1–2 級大多在初級，第 3–4 級大多在中級，第 5–6 級大多在中高級。</p>
+    <ul class="feat">
+      <li><b>快忘的時候才考你</b><span>FSRS 記憶模型估計每個字還記得的機率，在快要忘記時排進複習。</span></li>
+      <li><b>認得和會拼分開記</b><span>英翻中和拼字是兩條獨立的記憶曲線。</span></li>
+      <li><b>答錯馬上再考</b><span>同一回合再出現直到答對，之後間隔一次比一次長。</span></li>
+      <li><b>例句和用法</b><span>美式發音、例句、中文翻譯和易混淆字說明。</span></li>
+      <li><b>離線、免帳號、不收集資料</b><span>沒有訂閱，學習紀錄只存在你的手機。</span></li>
+      <li><b>每一級先免費試 200 字</b><span>試過覺得適合再買。</span></li>
+    </ul>
+    <div class="actions"><a class="btn solid" href="https://apps.apple.com/tw/app/id6821861109">在 App Store 下載</a></div>
   </section>
 
   <footer><a href="../daily/">學測詞彙每日 10 題</a>・<a href="../">Yushan Labs</a></footer>
 </div>
-<div class="modal" id="shareBox" hidden role="dialog" aria-label="分享成績小卡">
-  <div class="modalin sheet">
-    <img id="cardImg" alt="成績小卡">
+
+<div class="modal" id="shareBox" hidden role="dialog" aria-label="分享結果">
+  <div class="modalin">
+    <img id="cardImg" alt="結果小卡">
     <p class="muted hint">長按圖片可以儲存；或用下面的按鈕分享。</p>
-    <div class="row">
+    <div class="actions" style="justify-content:center">
       <button class="btn solid" id="shareImg">分享圖片</button>
-      <a class="btn" id="saveImg" download="學測單字量測驗.png">儲存圖片</a>
+      <a class="btn" id="saveImg" download="學測單字量.png">儲存圖片</a>
       <button class="btn" id="copyLink">複製連結</button>
     </div>
     <button class="link" id="closeShare">關閉</button>
@@ -331,9 +343,8 @@ footer a{color:inherit}
 <script>
 (function(){
   const $=id=>document.getElementById(id);
-  const PER=10, LEVELS=[1,2,3,4,5,6], KEYS=['(A)','(B)','(C)','(D)','(E)'];
+  const PER=10, LEVELS=[1,2,3,4,5,6], KEYS=['A','B','C','D'];
   const GEPT={1:'初級',2:'初級',3:'中級',4:'中級',5:'中高級',6:'中高級'};
-  // 等級：依詞彙表累積級數劃分（每級約 1,000 字）
   const TIERS=[
     {max:1000,name:'起步',text:'詞彙表第 1 級還沒有完全掌握。這一級是國中最常用的字，學測閱讀的每一句幾乎都會用到，是所有級別的基礎。'},
     {max:2000,name:'國中基礎',text:'第 1 級大致掌握，第 2 級還在建立。第 1–2 級大致相當於國中範圍；閱讀時還會常遇到不認得的常用字，影響理解速度。'},
@@ -342,10 +353,11 @@ footer a{color:inherit}
     {max:5000,name:'學測進階',text:'第 1–4 級大致掌握，可以應付大部分學測詞彙題。新課綱第 5 級的正解比例升到 20%，要拿高分需要補強第 5 級。'},
     {max:Infinity,name:'全面掌握',text:'詞彙表的大部分已經認得，學測單字不再是主要障礙。接下來可以把時間放在拼字、用法和閱讀速度；第 6 級在新課綱（111–115 年）的詞彙題正解中還沒有出現過，可以放在最後。'}
   ];
-  let bank=null, qs=[], cur=0, ans=[], used=new Set(), stats={}, rounds=0, lastTotal=0;
+  let redraw=null; window.addEventListener('resize',()=>{ if(redraw&&!$('res').hidden) redraw(); });
+  let bank=null, qs=[], cur=0, ans=[], used=new Set(), stats={}, rounds=0, lastTotal=0, last={}, cardBlob=null;
   const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
   const toast=t=>{const e=$('toast');e.textContent=t;e.classList.add('on');setTimeout(()=>e.classList.remove('on'),1800);};
-  const r50=x=>Math.round(x/50)*50;
+  const r50=x=>Math.round(x/50)*50, fmt=x=>Math.round(x).toLocaleString();
 
   fetch('bank.json').then(r=>r.json()).then(b=>{bank=b;}).catch(()=>{$('go').textContent='題庫載入失敗，請重新整理';});
 
@@ -353,55 +365,61 @@ footer a{color:inherit}
   function left(){ return Math.min(...LEVELS.map(l=>bank.items.filter(x=>x.l===l&&!used.has(x.w)).length)); }
   function build(){
     qs=[];
-    LEVELS.forEach(l=>{
-      shuffle(bank.items.filter(x=>x.l===l&&!used.has(x.w))).slice(0,PER)
-        .forEach(x=>qs.push({...x,opts:shuffle([x.a,...x.d])}));
-    });
+    LEVELS.forEach(l=>{ shuffle(bank.items.filter(x=>x.l===l&&!used.has(x.w))).slice(0,PER).forEach(x=>qs.push({...x,opts:shuffle([x.a,...x.d])})); });
     cur=0; ans=new Array(qs.length).fill(undefined);
   }
   function show(ids){['start','quiz','res','missBox'].forEach(s=>$(s).hidden=!ids.includes(s));}
-  function drawCard(){
-    let h='';
-    LEVELS.forEach((l,r)=>{
-      h+=`<div class="acrow"><span class="lab">第${l}級</span>`;
-      for(let i=0;i<PER;i++){ const k=r*PER+i, a=ans[k];
-        h+=`<span class="bub${a===null?' idk':a!==undefined?' on':''}${k===cur?' cur':''}"></span>`; }
-      h+='</div>';
-    });
-    $('card').innerHTML=h;
-  }
   function render(){
     const q=qs[cur];
-    $('pn').textContent=`第 ${cur+1} 題`;
-    $('lvtag').textContent=`（第 ${q.l} 級）`;
-    $('round').textContent=rounds?`第 ${rounds+1} 輪`:`共 ${qs.length} 題`;
+    $('pn').textContent=`${cur+1} / ${qs.length}`+(rounds?`　第 ${rounds+1} 輪`:'');
+    $('lvtag').textContent=`第 ${q.l} 級`;
+    $('seg').innerHTML=LEVELS.map((l,i)=>`<div><i style="width:${Math.max(0,Math.min(PER,cur-i*PER))/PER*100}%"></i></div>`).join('');
     $('word').textContent=q.w;
     const box=$('opts'); box.innerHTML='';
     [...q.opts,null].forEach((o,i)=>{
       const b=document.createElement('button');
       b.className='opt'+(o===null?' idk':'');
       if(ans[cur]!==undefined && ans[cur]===o) b.classList.add('pick');
-      b.innerHTML=`<span class="k"></span><span></span>`;
-      b.firstChild.textContent=KEYS[i];
+      b.innerHTML=o===null?'<span></span>':'<span class="k"></span><span></span>';
+      if(o!==null) b.firstChild.textContent=KEYS[i];
       b.lastChild.textContent=o===null?'不知道':o;
       b.onclick=()=>pick(o);
       box.appendChild(b);
     });
     $('back').hidden=cur===0;
-    drawCard();
   }
-  function pick(o){
-    ans[cur]=o;
-    if(cur<qs.length-1){cur++;render();}
-    else finish();
-  }
-  // 每層：不偏估計量 (答對 − 答錯/3) ÷ 題數；表格顯示時才截斷在 0–100%
-  function levelRaw(s){ return (s.c-s.w/3)/s.n; }
-  function levelScore(s){ return Math.max(0,Math.min(1,levelRaw(s))); }
+  function pick(o){ ans[cur]=o; if(cur<qs.length-1){cur++;render();} else finish(); }
+  // 每層：不偏估計量 (答對 − 答錯/3) ÷ 題數；圖表顯示時才截斷在 0–100%
+  const levelRaw=s=>(s.c-s.w/3)/s.n;
+  const clip=p=>Math.max(0,Math.min(1,p));
   function levelVar(s){
     const a=s.c/s.n, b=s.w/s.n, emp=a+b/9-(a-b/3)**2;
     const ps=(Math.max(0,s.c-s.w/3)+0.5)/(s.n+1);
     return Math.max(emp,ps*(1-ps))/s.n;
+  }
+  function ciChart(total,lo,hi,all){
+    const svg=$('ciChart'), W=Math.max(300,svg.parentNode.clientWidth), m=16, X=v=>m+v/all*(W-2*m);
+    svg.setAttribute('viewBox',`0 0 ${W} 64`);
+    let h=`<line class="axis" x1="${m}" y1="36" x2="${W-m}" y2="36"/>`;
+    const step=W<420?2000:1000;
+    for(let t=0;t<=6000;t+=1000) h+=`<line class="grid" x1="${X(t)}" y1="32" x2="${X(t)}" y2="40"/>`+(t%step===0?`<text x="${X(t)}" y="58" text-anchor="middle">${t.toLocaleString()}</text>`:'');
+    h+=`<rect class="band" x="${X(lo)}" y="27" width="${X(hi)-X(lo)}" height="18" rx="3"/>`;
+    h+=`<circle class="pt" cx="${X(total)}" cy="36" r="5.5"/><text class="val" x="${X(total)}" y="16" text-anchor="middle">${fmt(total)}</text>`;
+    svg.innerHTML=h;
+  }
+  function lvChart(rows){
+    const svg=$('lvChart'), W=Math.max(300,svg.parentNode.clientWidth), L=58, R=W-44, X=p=>L+p*(R-L), H=6*30+34;
+    svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+    let h='';
+    for(let t=0;t<=100;t+=(W<420?25:20)) h+=`<line class="grid" x1="${X(t/100)}" y1="6" x2="${X(t/100)}" y2="${H-26}"/><text x="${X(t/100)}" y="${H-8}" text-anchor="middle">${t}%</text>`;
+    h+=`<line class="thr" x1="${X(.8)}" y1="2" x2="${X(.8)}" y2="${H-26}"/>`;
+    rows.forEach((r,i)=>{
+      const y=20+i*30, low=r.p<0.8?' low':'';
+      h+=`<text class="lab" x="0" y="${y+4.5}">第 ${r.l} 級</text>`;
+      h+=`<line class="whisk${low}" x1="${X(r.lo)}" y1="${y}" x2="${X(r.hi)}" y2="${y}"/><line class="whisk${low}" x1="${X(r.lo)}" y1="${y-5}" x2="${X(r.lo)}" y2="${y+5}"/><line class="whisk${low}" x1="${X(r.hi)}" y1="${y-5}" x2="${X(r.hi)}" y2="${y+5}"/>`;
+      h+=`<circle class="pt${low}" cx="${X(r.p)}" cy="${y}" r="5"/><text class="val" x="${W}" y="${y+4.5}" text-anchor="end">${Math.round(r.p*100)}%</text>`;
+    });
+    svg.innerHTML=h;
   }
   function finish(){
     const missed=[];
@@ -409,48 +427,41 @@ footer a{color:inherit}
       if(ans[i]===q.a) s.c++; else { if(ans[i]!==null) s.w++; missed.push(q); } });
     rounds++;
     const sizes=bank.sizes; let total=0, v=0; const per=[];
-    LEVELS.forEach(l=>{ const s=stats[l], p=levelScore(s);
-      total+=levelRaw(s)*sizes[l]; v+=levelVar(s)*sizes[l]*sizes[l]; per.push({l,p,n:Math.round(p*sizes[l])}); });
+    LEVELS.forEach(l=>{ const s=stats[l], raw=levelRaw(s), se=Math.sqrt(levelVar(s));
+      total+=raw*sizes[l]; v+=levelVar(s)*sizes[l]*sizes[l];
+      per.push({l,s,raw,p:clip(raw),lo:clip(raw-1.96*se),hi:clip(raw+1.96*se),n:raw*sizes[l]}); });
     total=Math.max(0,total);
-    $('clipNote').hidden=!LEVELS.some(l=>{const r=levelRaw(stats[l]);return r<0||r>1;});
     const half=1.96*Math.sqrt(v), all=Object.values(sizes).reduce((a,b)=>a+b,0);
+    const lo=Math.max(0,r50(total-half)), hi=Math.min(all,r50(total+half));
     lastTotal=r50(total);
     $('total').textContent=lastTotal.toLocaleString();
-    const lo=Math.max(0,r50(total-half)), hi=Math.min(all,r50(total+half));
-    $('range').textContent=`95% 信賴區間：${lo.toLocaleString()}–${hi.toLocaleString()} 字（共作答 ${rounds*60} 題）`;
-    // 等級與評價（依估計字數）
-    const t=TIERS.findIndex(x=>total<x.max);
-    const T=TIERS[t];
-    $('tier').textContent=T.name; $('tierNo').textContent=`第 ${t+1} 階／共 ${TIERS.length} 階`;
+    $('pm').textContent=`± ${r50(half).toLocaleString()}`;
+    $('range').textContent=`95% 信賴區間 ${lo.toLocaleString()}–${hi.toLocaleString()} 字・樣本 ${rounds*60} 題`;
+    redraw=()=>{ciChart(lastTotal,lo,hi,all); lvChart(per);};
+    $('levels').innerHTML=per.map(r=>`<tr><td>第 ${r.l} 級</td><td>${r.s.n}</td><td>${r.s.c}</td><td>${r.s.w}</td><td>${r.s.n-r.s.c-r.s.w}</td><td>${Math.round(r.raw*100)}%</td><td>${Math.round(r.lo*100)}–${Math.round(r.hi*100)}%</td><td>${fmt(r.n)}</td></tr>`).join('');
+    $('fn').textContent=rounds*60; $('ft').textContent=fmt(total);
+    $('clipNote').hidden=!per.some(r=>r.raw<0||r.raw>1);
+    const t=TIERS.findIndex(x=>total<x.max), T=TIERS[t];
+    $('tier').textContent=T.name; $('tierNo').textContent=`第 ${t+1} 階／共 ${TIERS.length} 階・依估計字數劃分`;
     $('evalText').textContent=T.text;
-    last={tier:T.name,tierNo:`第 ${t+1} 階／共 ${TIERS.length} 階`,per,range:`95% 信賴區間 ${lo.toLocaleString()}–${hi.toLocaleString()} 字・作答 ${rounds*60} 題`};
-    // 建議（依各級作答）
-    const tips=[];
-    const focus=per.find(x=>x.p<0.8);
+    const tips=[], focus=per.find(x=>x.p<0.8);
     if(focus){
       const gap=Math.round(sizes[focus.l]*(1-focus.p)/10)*10, weeks=Math.max(1,Math.ceil(gap/20/7));
       tips.push(`優先補第 ${focus.l} 級。這一級估計還有約 ${gap.toLocaleString()} 字不熟，每天 20 個新字，大約 ${weeks} 週可以補完。這一級的字大多在全民英檢${GEPT[focus.l]}。`);
       const next=per.find(x=>x.l>focus.l&&x.p<0.8);
       if(next&&focus.p>=0.5) tips.push(`第 ${focus.l} 級已有一半以上，可以同時開始第 ${next.l} 級，但新字的比例以第 ${focus.l} 級為主。`);
-    } else {
-      tips.push('詞彙表各級都在 80% 以上。接下來可以把重心放在拼字和用法：認得一個字，不代表寫作和翻譯時用得出來。');
-    }
+    } else tips.push('詞彙表各級都在 80% 以上。接下來可以把重心放在拼字和用法：認得一個字，不代表寫作和翻譯時用得出來。');
     let wr=0; qs.forEach((q,i)=>{ if(ans[i]!==null&&ans[i]!==q.a) wr++; });
-    if(wr>=10) tips.push(`這一輪答錯 ${wr} 題。不確定的字請選 (E) 不知道，亂猜不會讓分數變高，只會讓信賴區間變寬。`);
+    if(wr>=10) tips.push(`這一輪答錯 ${wr} 題。不確定的字請選「不知道」，亂猜不會讓估計值變高，只會讓信賴區間變寬。`);
     if(rounds<3) tips.push(`目前的信賴區間是 ±${r50(half).toLocaleString()} 字，再做 60 題可以縮小到約 ±${r50(half*Math.sqrt(rounds/(rounds+1))).toLocaleString()} 字。`);
     tips.push('背一段時間後（例如一個月）再回來測一次，用兩次的結果確認進度。');
     $('tips').innerHTML=''; tips.forEach(x=>{const li=document.createElement('li');li.textContent=x;$('tips').appendChild(li);});
-    const tb=$('levels'); tb.innerHTML='';
-    per.forEach(x=>{
-      const pct=Math.round(x.p*100), cls=x.p>=0.8?'ok':x.p>=0.5?'mid':'low', g=x.p>=0.8?'甲':x.p>=0.5?'乙':'丙';
-      const tr=document.createElement('tr'); tr.className=cls;
-      tr.innerHTML=`<td>第 ${x.l} 級</td><td class="bar"><div class="bw"><div class="track"><i style="width:${pct}%"></i></div><span>${pct}%</span></div></td><td>${x.n.toLocaleString()}</td><td class="mark">${g}</td>`;
-      tb.appendChild(tr);
-    });
+    last={lo,hi,half:r50(half),n:rounds*60,all};
     const m=$('missed'); m.innerHTML='';
-    missed.forEach(q=>{const li=document.createElement('li');li.innerHTML='<b class="en" lang="en"></b><span></span>';li.firstChild.textContent=q.w;li.lastChild.textContent=q.a;m.appendChild(li);});
+    missed.forEach(q=>{const li=document.createElement('li');li.innerHTML='<b lang="en"></b><span></span>';li.firstChild.textContent=q.w;li.lastChild.textContent=q.a;m.appendChild(li);});
     $('more').hidden=left()<PER;
     show(['res'].concat(missed.length?['missBox']:[]));
+    redraw();
     window.scrollTo({top:$('res').offsetTop-12});
   }
   function begin(){ build(); show(['quiz']); $('how').open=false; render(); window.scrollTo({top:$('quiz').offsetTop-12}); }
@@ -458,74 +469,51 @@ footer a{color:inherit}
   $('more').onclick=begin;
   $('restart').onclick=()=>{ reset(); begin(); };
   $('back').onclick=()=>{ if(cur>0){cur--;render();} };
+
+  // 分享小卡：只放數字與信賴區間
   const URL_='https://yushanlabs.github.io/vocab/';
-  const shareText=()=>`我在「學測單字量測驗」估計認得 ${lastTotal.toLocaleString()} 個學測單字（${last.tier}），你呢？`;
-  let last={}, cardBlob=null;
-  async function drawShareCard(){
-    const W=1080,H=1350, c=document.createElement('canvas'); c.width=W; c.height=H;
-    const g=c.getContext('2d');
-    const ZH='"Noto Serif TC","Songti TC","PMingLiU",serif', EN='"Tinos","Times New Roman",Times,serif';
-    const INK='#18191B', PEN='#55585E', RULE='#C9CAC4', RED='#C22F2F', CARD='#D2564A';
-    const texts=['學測英文・詞彙','單字量測驗卷','成績通知單','估計單字量','個學測單字','等級','95% 信賴區間','第級甲乙丙階共','測測你的學測單字量','記憶曲線單字 App','字',last.tier,last.range];
-    try{ await Promise.all([document.fonts.load(`900 64px ${ZH}`,texts.join('')),document.fonts.load(`400 32px ${ZH}`,texts.join('')),document.fonts.load(`700 200px ${EN}`,'0123456789,')]); }catch(e){}
-    g.fillStyle='#F6F6F2'; g.fillRect(0,0,W,H);
-    g.fillStyle='#FFFFFF'; g.fillRect(56,56,W-112,H-112); g.strokeStyle=RULE; g.lineWidth=2; g.strokeRect(56,56,W-112,H-112);
-    const center=(t,y,font,color)=>{g.font=font;g.fillStyle=color;g.textAlign='center';g.fillText(t,W/2,y);};
-    center('學測英文・詞彙　單字量測驗卷',140,`400 32px ${ZH}`,PEN);
-    center('成 績 通 知 單',225,`900 68px ${ZH}`,INK);
-    g.strokeStyle=INK; g.lineWidth=3; [258,268].forEach(y=>{g.beginPath();g.moveTo(110,y);g.lineTo(W-110,y);g.stroke();});
-    center('估計單字量',322,`400 36px ${ZH}`,PEN);
+  const shareText=()=>`我的學測單字量估計是 ${lastTotal.toLocaleString()} 字（95% 信賴區間 ${last.lo.toLocaleString()}–${last.hi.toLocaleString()}），你呢？`;
+  async function drawCard(){
+    const W=1080,H=1350,c=document.createElement('canvas'); c.width=W; c.height=H; const g=c.getContext('2d');
+    const SANS='"IBM Plex Sans","Noto Sans TC",sans-serif', ZH='"Noto Sans TC","PingFang TC",sans-serif';
+    const FG='#1D2330', MU='#5D6675', RULE='#E2E6EC', DATA='#2B5DAA', BAND='#D5E2F4';
+    const txt='學測單字量估計個字信賴區間樣本題分層隨機抽樣詞彙表測測你的';
+    try{ await Promise.all([document.fonts.load(`700 40px ${ZH}`,txt),document.fonts.load(`400 30px ${ZH}`,txt),document.fonts.load(`700 240px ${SANS}`,'0123456789,±–'),document.fonts.load(`500 30px ${SANS}`,'0123456789,±–.abcdefghijklmnopqrstuvwxyz/')]); }catch(e){}
+    g.fillStyle='#FFFFFF'; g.fillRect(0,0,W,H);
+    g.fillStyle=DATA; g.fillRect(0,0,W,14);
+    g.textAlign='left'; g.fillStyle=DATA; g.font=`600 30px ${SANS}`; g.fillText('VOCABULARY SIZE ESTIMATE',90,130);
+    g.fillStyle=FG; g.font=`700 52px ${ZH}`; g.fillText('學測單字量',90,200);
+    g.fillStyle=RULE; g.fillRect(90,240,W-180,2);
+    g.fillStyle=MU; g.font=`400 36px ${ZH}`; g.fillText('估計值',90,400);
     const num=lastTotal.toLocaleString();
-    g.font=`700 210px ${EN}`; const nw=g.measureText(num).width;
-    center(num,545,`700 210px ${EN}`,RED);
-    // 紅筆圈
-    g.save(); g.translate(W/2,475); g.rotate(-0.04); g.strokeStyle=RED; g.lineWidth=7; g.lineCap='round';
-    const rx=nw/2+70, ry=118; g.beginPath();
-    for(let a=-0.35;a<=Math.PI*2+0.25;a+=0.05){ const k=1+0.035*Math.sin(a*3); const x=Math.cos(a)*rx*k, y=Math.sin(a)*ry*k; a===-0.35?g.moveTo(x,y):g.lineTo(x,y); }
-    g.stroke(); g.restore();
-    center('個學測單字',660,`600 46px ${ZH}`,INK);
-    center(last.range,720,`400 32px ${ZH}`,PEN);
-    // 等級
-    g.textAlign='left'; g.font=`900 60px ${ZH}`; const tw=g.measureText(last.tier).width;
-    g.font=`400 30px ${ZH}`; const lw=g.measureText('等級').width+28, sw=g.measureText(last.tierNo).width;
-    let x=(W-(lw+24+tw+24+sw))/2; const ty=818;
-    g.strokeStyle=PEN; g.lineWidth=2; g.strokeRect(x,ty-36,lw,48); g.fillStyle=PEN; g.fillText('等級',x+14,ty);
-    x+=lw+24; g.font=`900 60px ${ZH}`; g.fillStyle=RED; g.fillText(last.tier,x,ty+8);
-    x+=tw+24; g.font=`400 30px ${ZH}`; g.fillStyle=PEN; g.fillText(last.tierNo,x,ty);
-    // 各級
-    const top=862, rh=50, L=150, R=W-150;
-    g.strokeStyle=INK; g.lineWidth=2;
-    last.per.forEach((p,i)=>{
-      const y=top+i*rh, mid=y+rh/2+11;
-      g.beginPath(); g.moveTo(L,y); g.lineTo(R,y); g.stroke();
-      g.textAlign='left'; g.font=`400 32px ${ZH}`; g.fillStyle=INK; g.fillText(`第 ${p.l} 級`,L+10,mid);
-      const bx=L+170, bw=380, by=y+rh/2-9;
-      g.fillStyle='#F6F6F2'; g.fillRect(bx,by,bw,18); g.strokeStyle=RULE; g.lineWidth=1.5; g.strokeRect(bx,by,bw,18);
-      g.fillStyle=p.p<0.5?RED:INK; g.fillRect(bx,by,bw*p.p,18);
-      g.textAlign='right'; g.font=`400 30px ${EN}`; g.fillStyle=INK; g.fillText(Math.round(p.p*100)+'%',bx+bw+110,mid);
-      const gr=p.p>=0.8?'甲':p.p>=0.5?'乙':'丙';
-      g.textAlign='center'; g.font=`900 36px ${ZH}`; g.fillStyle=gr==='丙'?RED:INK; g.fillText(gr,R-40,mid);
-      g.strokeStyle=INK; g.lineWidth=2;
-    });
-    g.beginPath(); g.moveTo(L,top+6*rh); g.lineTo(R,top+6*rh); g.stroke();
-    // 頁尾
-    g.setLineDash([10,10]); g.strokeStyle=RULE; g.lineWidth=2; g.beginPath(); g.moveTo(110,1188); g.lineTo(W-110,1188); g.stroke(); g.setLineDash([]);
-    g.textAlign='left'; g.font=`600 32px ${ZH}`; g.fillStyle=INK; const a='測測你的學測單字量：'; g.fillText(a,110,1234);
-    const aw=g.measureText(a).width; g.font=`700 32px ${EN}`; g.fillStyle=RED; g.fillText('yushanlabs.github.io/vocab',110+aw,1234);
-    g.font=`400 26px ${ZH}`; g.fillStyle=PEN; g.fillText('記憶曲線單字 App・FSRS 背單字',110,1272);
+    g.fillStyle=DATA; g.font=`700 250px ${SANS}`; g.fillText(num,80,620);
+    const nw=g.measureText(num).width;
+    g.fillStyle=FG; g.font=`500 48px ${ZH}`; g.fillText('字',90+nw+10,620);
+    g.fillStyle=MU; g.font=`500 44px ${SANS}`; g.fillText(`± ${last.half.toLocaleString()}`,90,700);
+    // 信賴區間數線
+    const x0=90,x1=W-90,y=860,X=v=>x0+v/last.all*(x1-x0);
+    g.strokeStyle='#C9D0DA'; g.lineWidth=3; g.beginPath(); g.moveTo(x0,y); g.lineTo(x1,y); g.stroke();
+    g.font=`400 26px ${SANS}`; g.fillStyle=MU; g.textAlign='center';
+    for(let t=0;t<=6000;t+=1000){ g.fillRect(X(t)-1.5,y-12,3,24); g.fillText(t.toLocaleString(),X(t),y+56); }
+    g.fillStyle=BAND; g.fillRect(X(last.lo),y-26,X(last.hi)-X(last.lo),52);
+    g.fillStyle=DATA; g.beginPath(); g.arc(X(lastTotal),y,16,0,Math.PI*2); g.fill();
+    g.textAlign='left'; g.fillStyle=MU; g.font=`400 32px ${ZH}`;
+    g.fillText(`95% 信賴區間 ${last.lo.toLocaleString()}–${last.hi.toLocaleString()} 字・樣本 ${last.n} 題`,90,1010);
+    g.fillText('分層隨機抽樣・母體為詞彙表 6,136 字',90,1060);
+    g.fillStyle=RULE; g.fillRect(90,1150,W-180,2);
+    g.fillStyle=FG; g.font=`500 32px ${ZH}`; g.fillText('測測你的學測單字量',90,1220);
+    g.fillStyle=DATA; g.font=`600 32px ${SANS}`; g.fillText('yushanlabs.github.io/vocab',90,1268);
     return c;
   }
   $('share').onclick=async()=>{
-    const c=await drawShareCard();
-    cardBlob=await new Promise(r=>c.toBlob(r,'image/png'));
-    const u=window.URL.createObjectURL(cardBlob);
-    $('cardImg').src=u; $('saveImg').href=u;
-    const f=new File([cardBlob],'學測單字量測驗.png',{type:'image/png'});
+    const c=await drawCard(); cardBlob=await new Promise(r=>c.toBlob(r,'image/png'));
+    const u=window.URL.createObjectURL(cardBlob); $('cardImg').src=u; $('saveImg').href=u;
+    const f=new File([cardBlob],'學測單字量.png',{type:'image/png'});
     $('shareImg').hidden=!(navigator.canShare&&navigator.canShare({files:[f]}));
     $('shareBox').hidden=false;
   };
   $('shareImg').onclick=async()=>{
-    const f=new File([cardBlob],'學測單字量測驗.png',{type:'image/png'});
+    const f=new File([cardBlob],'學測單字量.png',{type:'image/png'});
     try{ await navigator.share({files:[f],text:shareText()+' '+URL_}); }catch(e){ if(e.name!=='AbortError') toast('無法分享，請長按圖片儲存'); }
   };
   $('copyLink').onclick=async()=>{ try{ await navigator.clipboard.writeText(shareText()+' '+URL_); toast('已複製，可以貼給朋友'); }catch(e){ toast(URL_); } };
@@ -536,7 +524,7 @@ footer a{color:inherit}
     const k=e.key.toLowerCase(), q=qs[cur]; if(!q) return;
     const i='abcd'.indexOf(k), n='1234'.indexOf(k);
     if(i>=0) pick(q.opts[i]); else if(n>=0) pick(q.opts[n]);
-    else if(k==='e'||k==='5'||k==='0') pick(null);
+    else if(k==='0'||k==='5'||k==='?') pick(null);
     else if(k==='backspace'&&cur>0){cur--;render();}
   });
 })();
