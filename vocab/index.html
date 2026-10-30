@@ -58,6 +58,9 @@ button:focus-visible,a:focus-visible,summary:focus-visible{outline:2px solid var
 .btn{border:0;border-radius:999px;padding:12px 26px;font-weight:600;font-size:16px;text-decoration:none;display:inline-block;text-align:center}
 .btn.main{background:var(--accent);color:var(--on-accent)}
 .btn.ghost{background:transparent;border:1px solid var(--line)}
+.lead{font-family:var(--display);font-size:20px;font-weight:700;line-height:1.4;text-wrap:balance}
+.math{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px 16px;display:flex;flex-direction:column;gap:6px;font-variant-numeric:tabular-nums;font-size:15px}
+.math .t{font-weight:700;color:var(--accent)}
 .facts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center}
 .facts div{background:var(--bg);border-radius:10px;padding:10px 4px}
 .facts b{display:block;font-family:var(--latin);font-size:24px;font-weight:600;line-height:1.2}
@@ -133,16 +136,21 @@ footer a{color:inherit}
 
   <!-- 開始 -->
   <section id="start" class="card">
-    <p>你認得幾個學測單字？大考中心《高中英文參考詞彙表》有 6 級、6,000 多字，每一級抽 10 個字考你，看英文選中文。</p>
+    <p class="lead">抽 60 個字，算出你認得多少學測單字。</p>
+    <p>大考中心《高中英文參考詞彙表》共 6,136 字，分成 6 級、每級約 1,000 字。每級隨機抽 10 個字，看英文選中文，用答對的比例推算整級：</p>
+    <div class="math">
+      <p><span class="t">每級認得比例</span> = (答對 − 答錯 ÷ 3) ÷ 10</p>
+      <p><span class="t">你的單字量</span> = Σ（每級認得比例 × 該級字數）</p>
+    </div>
+    <ul class="tips">
+      <li><b>為什麼扣「答錯 ÷ 3」？</b>四選一亂猜，平均每猜錯 3 題會猜對 1 題，扣掉的就是猜對的那一題。選「不知道」不扣分，所以不會就選「不知道」。</li>
+      <li><b>結果附誤差範圍。</b>60 題的 95% 範圍約 ±500 字，再做 60 題縮到 ±370 字，180 題 ±300 字。</li>
+    </ul>
     <div class="facts">
       <div><b>60</b><span>題</span></div>
       <div><b>5</b><span>分鐘左右</span></div>
       <div><b>6</b><span>個級別</span></div>
     </div>
-    <ul class="tips">
-      <li><b>不會就選「不知道」，不要猜。</b>亂猜會被扣回來，結果反而不準。</li>
-      <li>作答時不會顯示對錯，最後一起看結果。</li>
-    </ul>
     <button class="btn main" id="go">開始測驗</button>
   </section>
 
@@ -182,20 +190,18 @@ footer a{color:inherit}
   </section>
 
   <details class="how" id="how">
-    <summary>這個測驗怎麼算的？</summary>
+    <summary>題庫、準確度與限制</summary>
     <div class="body">
       <ol>
-        <li><b>分級抽樣。</b>大考中心《高中英文參考詞彙表》（111 學年度起適用）把 6,136 個字分成 1–6 級，每級約 1,000 字。每一級的題庫有 150 個字，每輪從每級抽 10 個沒考過的字，一共 60 題。</li>
-        <li><b>看英文選中文。</b>錯的選項是同一級、同詞性的字，意思和答案沒有重疊，避免模稜兩可。</li>
-        <li><b>扣掉猜對的。</b>四選一亂猜也有 1/4 的機會答對，所以每答錯 3 題，就扣掉 1 題答對。選「不知道」不扣分。
-          <div class="formula">某一級的認得比例 ＝（答對 − 答錯 ÷ 3）÷ 10</div></li>
-        <li><b>換算成字數。</b>每一級的認得比例 × 這一級的字數，6 級加起來，就是估計的單字量。
-          <div class="formula">例：第 4 級答對 7 題、答錯 3 題 → (7 − 1) ÷ 10 = 60% → 約 610 字</div></li>
+        <li><b>題庫。</b>詞彙表（111 學年度起適用）每一級各選 150 個字，共 900 字。每輪從每級抽 10 個沒考過的字，所以可以連做 15 輪不重複。</li>
+        <li><b>選項。</b>錯的選項是同一級、同詞性的字，意思和答案沒有重疊，不會出現兩個都對的情況。</li>
+        <li><b>計算例子。</b>第 4 級答對 7 題、答錯 3 題：
+          <div class="formula">(7 − 3 ÷ 3) ÷ 10 = 60%　→　60% × 1,022 字 ≈ 613 字</div>6 級都這樣算，加起來就是你的單字量。</li>
       </ol>
       <h3>準不準？</h3>
-      <p class="muted">這是抽樣估計，結果頁的「大約在…之間」就是誤差範圍：真正的字數有 95% 的機會落在裡面。我們用電腦模擬了上萬次作答，誤差大小主要看題數：</p>
+      <p class="muted">結果頁的「大約在…之間」是 95% 範圍：真正的字數有 95% 的機會落在裡面。這是用電腦模擬上萬次作答驗證過的，誤差大小由題數決定：</p>
       <div class="formula">60 題：約 ±500 字　120 題：約 ±370 字　180 題：約 ±300 字</div>
-      <p class="muted">所以想要更準，就按「再做 60 題」，新的字會和前面的作答合起來算。不會的字亂猜，範圍會變大（60 題約 ±700 字），這也是為什麼不會要選「不知道」。研究上常用的詞彙量測驗（例如 Vocabulary Levels Test）也是用這種分級抽樣的原理。</p>
+      <p class="muted">所以想要更準，就按「再做 60 題」，新的字會和前面的作答合起來算。不會的字亂猜，範圍會變大（60 題約 ±700 字），這也是為什麼不會要選「不知道」。分級抽樣是詞彙量測驗的標準方法，Vocabulary Levels Test 等研究用的測驗也是這樣設計的。</p>
       <h3>可能偏高的地方</h3>
       <p class="muted">如果你常用刪去法（刪掉一兩個選項再猜），答對機率比四分之一高，分數會稍微偏高。錯的選項刻意選了意思差很遠的字，比較好猜，也會讓結果略為偏高。</p>
       <h3>測的是什麼？</h3>
