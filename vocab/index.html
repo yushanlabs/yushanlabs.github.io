@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>學測單字量測驗</title>
-<meta name="description" content="60 題看英文選中文，5 分鐘估出你認得多少學測單字，並看出每一級的熟練度。">
+<meta name="description" content="60 題看英文選中文，5 分鐘估出你認得多少學測單字、誤差範圍，以及每一級的熟練度。">
 <meta property="og:title" content="學測單字量測驗：你認得幾個學測單字？">
 <meta property="og:description" content="大考中心詞彙表 1–6 級各抽 10 字，60 題、約 5 分鐘，估出你的單字量與該主攻哪一級。">
 <meta property="og:image" content="https://yushanlabs.github.io/assets/icons/gept.png">
@@ -96,6 +96,8 @@ details.how[open] summary::after{content:"－"}
 .result .row{display:flex;flex-wrap:wrap;gap:10px;margin-top:6px}
 .result .btn.light{background:var(--on-accent);color:var(--accent)}
 .result .btn.ghost{border-color:currentColor;color:inherit}
+.result .range{font-size:14px;opacity:.85;margin-top:-4px}
+.result .link{align-self:flex-start;background:none;border:0;color:inherit;opacity:.8;font-size:13px;text-decoration:underline;padding:2px 0}
 .levels{display:flex;flex-direction:column;gap:10px}
 .lv{display:grid;grid-template-columns:3.6em 1fr 7.6em;gap:10px;align-items:center;font-size:14px}
 .lv>span:first-child{white-space:nowrap}
@@ -108,6 +110,7 @@ details.how[open] summary::after{content:"－"}
 .missed{display:flex;flex-wrap:wrap;gap:6px}
 .missed span{border:1px solid var(--line);border-radius:999px;padding:3px 12px;font-size:14px;background:var(--bg)}
 .missed span b{font-family:var(--latin);font-weight:600;margin-right:6px}
+.missed span i{font-style:normal}
 .promo{display:flex;gap:14px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px}
 .promo img{width:60px;height:60px;border-radius:14px;flex:none}
 .promo .t{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
@@ -159,11 +162,13 @@ footer a{color:inherit}
     <div class="result">
       <p>你大約認得</p>
       <p class="big"><span id="total">0</span><small>個學測單字</small></p>
+      <p class="range" id="range"></p>
       <p id="advice"></p>
       <div class="row">
         <button class="btn light" id="share">分享結果</button>
-        <button class="btn ghost" id="redo">換一批字再測</button>
+        <button class="btn ghost" id="more">再做 60 題，結果更準</button>
       </div>
+      <button class="link" id="restart">全部重新開始</button>
     </div>
   </section>
   <section id="detail" class="card" hidden>
@@ -172,7 +177,7 @@ footer a{color:inherit}
     <div class="legend"><span style="--c:var(--good)">80% 以上：穩了</span><span style="--c:var(--warn)">50–79%：半熟</span><span style="--c:var(--wrong)">不到 50%：還不熟</span></div>
   </section>
   <section id="missBox" class="card" hidden>
-    <h2>這次不會的字</h2>
+    <h2>這一輪不會的字</h2>
     <div class="missed" id="missed"></div>
   </section>
 
@@ -180,7 +185,7 @@ footer a{color:inherit}
     <summary>這個測驗怎麼算的？</summary>
     <div class="body">
       <ol>
-        <li><b>分級抽樣。</b>大考中心《高中英文參考詞彙表》（111 學年度起適用）把 6,136 個字分成 1–6 級，每級約 1,000 字。我們從每一級的題庫各隨機抽 10 個字，一共 60 題。</li>
+        <li><b>分級抽樣。</b>大考中心《高中英文參考詞彙表》（111 學年度起適用）把 6,136 個字分成 1–6 級，每級約 1,000 字。每一級的題庫有 150 個字，每輪從每級抽 10 個沒考過的字，一共 60 題。</li>
         <li><b>看英文選中文。</b>錯的選項是同一級、同詞性的字，意思和答案沒有重疊，避免模稜兩可。</li>
         <li><b>扣掉猜對的。</b>四選一亂猜也有 1/4 的機會答對，所以每答錯 3 題，就扣掉 1 題答對。選「不知道」不扣分。
           <div class="formula">某一級的認得比例 ＝（答對 − 答錯 ÷ 3）÷ 10</div></li>
@@ -188,7 +193,11 @@ footer a{color:inherit}
           <div class="formula">例：第 4 級答對 7 題、答錯 3 題 → (7 − 1) ÷ 10 = 60% → 約 610 字</div></li>
       </ol>
       <h3>準不準？</h3>
-      <p class="muted">這是抽樣估計，每級只考 10 個字，結果可能差到正負三、四百字。換一批字多測幾次、取平均會更準。研究上常用的詞彙量測驗（例如 Vocabulary Levels Test）也是用這種分級抽樣的原理。</p>
+      <p class="muted">這是抽樣估計，結果頁的「大約在…之間」就是誤差範圍：真正的字數有 95% 的機會落在裡面。我們用電腦模擬了上萬次作答，誤差大小主要看題數：</p>
+      <div class="formula">60 題：約 ±500 字　120 題：約 ±370 字　180 題：約 ±300 字</div>
+      <p class="muted">所以想要更準，就按「再做 60 題」，新的字會和前面的作答合起來算。不會的字亂猜，範圍會變大（60 題約 ±700 字），這也是為什麼不會要選「不知道」。研究上常用的詞彙量測驗（例如 Vocabulary Levels Test）也是用這種分級抽樣的原理。</p>
+      <h3>可能偏高的地方</h3>
+      <p class="muted">如果你常用刪去法（刪掉一兩個選項再猜），答對機率比四分之一高，分數會稍微偏高。錯的選項刻意選了意思差很遠的字，比較好猜，也會讓結果略為偏高。</p>
       <h3>測的是什麼？</h3>
       <p class="muted">只測「看到英文知道中文意思」，不包括拼字、發音和用法。會認不一定會用，但認得是第一步。</p>
     </div>
@@ -208,24 +217,27 @@ footer a{color:inherit}
   const $=id=>document.getElementById(id);
   const PER=10, LEVELS=[1,2,3,4,5,6];
   const GEPT={1:'初級',2:'初級',3:'中級',4:'中級',5:'中高級',6:'中高級'};
-  let bank=null, qs=[], cur=0, ans=[];
+  let bank=null, qs=[], cur=0, ans=[], used=new Set(), stats={}, rounds=0, lastTotal=0;
   const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
   const toast=t=>{const e=$('toast');e.textContent=t;e.classList.add('on');setTimeout(()=>e.classList.remove('on'),1800);};
+  const r50=x=>Math.round(x/50)*50;
 
   fetch('bank.json').then(r=>r.json()).then(b=>{bank=b;}).catch(()=>{$('go').textContent='題庫載入失敗，請重新整理';});
 
+  function reset(){ used=new Set(); stats={}; LEVELS.forEach(l=>stats[l]={c:0,w:0,n:0}); rounds=0; }
+  function left(){ return Math.min(...LEVELS.map(l=>bank.items.filter(x=>x.l===l&&!used.has(x.w)).length)); }
   function build(){
     qs=[];
     LEVELS.forEach(l=>{
-      const pool=shuffle(bank.items.filter(x=>x.l===l)).slice(0,PER);
+      const pool=shuffle(bank.items.filter(x=>x.l===l&&!used.has(x.w))).slice(0,PER);
       pool.forEach(x=>qs.push({...x,opts:shuffle([x.a,...x.d])}));
     });
     cur=0; ans=new Array(qs.length).fill(null);
   }
-  function show(id){['start','quiz','res','detail','missBox'].forEach(s=>$(s).hidden=!id.includes(s));}
+  function show(ids){['start','quiz','res','detail','missBox'].forEach(s=>$(s).hidden=!ids.includes(s));}
   function render(){
     const q=qs[cur];
-    $('pn').textContent=`${cur+1} / ${qs.length}`;
+    $('pn').textContent=`${cur+1} / ${qs.length}`+(rounds?`（第 ${rounds+1} 輪）`:'');
     $('pbar').style.width=(cur/qs.length*100)+'%';
     $('lvtag').textContent=`第 ${q.l} 級`;
     $('word').textContent=q.w;
@@ -246,17 +258,26 @@ footer a{color:inherit}
     if(cur<qs.length-1){cur++;render();window.scrollTo({top:0});}
     else finish();
   }
+  // 某一級的分數：(答對 − 答錯/3) ÷ 題數；誤差用每題得分的變異數估計
+  function levelScore(s){ return Math.max(0,Math.min(1,(s.c-s.w/3)/s.n)); }
+  function levelVar(s){
+    const a=s.c/s.n, b=s.w/s.n, emp=a+b/9-(a-b/3)**2;
+    const ps=(Math.max(0,s.c-s.w/3)+0.5)/(s.n+1);
+    return Math.max(emp,ps*(1-ps))/s.n;
+  }
   function finish(){
-    const sizes=bank.sizes; let total=0; const per=[]; const missed=[];
-    LEVELS.forEach(l=>{
-      let c=0,w=0;
-      qs.forEach((q,i)=>{ if(q.l!==l) return;
-        if(ans[i]===q.a) c++; else { if(ans[i]!==null) w++; missed.push(q); } });
-      const p=Math.max(0,Math.min(1,(c-w/3)/PER));
-      const n=Math.round(p*sizes[l]); total+=n; per.push({l,p,n,size:sizes[l]});
-    });
-    total=Math.round(total/10)*10;
-    $('total').textContent=total.toLocaleString();
+    const missed=[];
+    qs.forEach((q,i)=>{ const s=stats[q.l]; s.n++; used.add(q.w);
+      if(ans[i]===q.a) s.c++; else { if(ans[i]!==null) s.w++; missed.push(q); } });
+    rounds++;
+    const sizes=bank.sizes; let total=0, v=0; const per=[];
+    LEVELS.forEach(l=>{ const s=stats[l], p=levelScore(s), n=p*sizes[l];
+      total+=n; v+=levelVar(s)*sizes[l]*sizes[l]; per.push({l,p,n:Math.round(n)}); });
+    const half=1.96*Math.sqrt(v), all=Object.values(sizes).reduce((a,b)=>a+b,0);
+    lastTotal=r50(total);
+    $('total').textContent=lastTotal.toLocaleString();
+    const lo=Math.max(0,r50(total-half)), hi=Math.min(all,r50(total+half));
+    $('range').textContent=`大約在 ${lo.toLocaleString()}–${hi.toLocaleString()} 字之間（共做了 ${rounds*60} 題）`;
     const focus=per.find(x=>x.p<0.8);
     let adv;
     if(!focus) adv='六個級別都在 80% 以上，學測單字幾乎沒有死角！';
@@ -272,16 +293,16 @@ footer a{color:inherit}
       lv.appendChild(d);
     });
     const m=$('missed'); m.innerHTML='';
-    missed.forEach(q=>{const s=document.createElement('span');s.innerHTML='<b lang="en"></b><span></span>';s.firstChild.textContent=q.w;s.lastChild.textContent=q.a;s.lastChild.style.cssText='border:0;padding:0;background:none';m.appendChild(s);});
-    $('missBox').hidden=missed.length===0;
+    missed.forEach(q=>{const s=document.createElement('span');s.innerHTML='<b lang="en"></b><i></i>';s.firstChild.textContent=q.w;s.lastChild.textContent=q.a;m.appendChild(s);});
+    $('more').hidden=left()<PER;
     show(['res','detail'].concat(missed.length?['missBox']:[]));
-    lastTotal=total;
     window.scrollTo({top:0});
   }
-  let lastTotal=0;
-  $('go').onclick=()=>{ if(!bank) return; build(); show(['quiz']); $('how').open=false; render(); };
+  function begin(){ build(); show(['quiz']); $('how').open=false; render(); window.scrollTo({top:0}); }
+  $('go').onclick=()=>{ if(!bank) return; reset(); begin(); };
+  $('more').onclick=begin;
+  $('restart').onclick=()=>{ reset(); begin(); };
   $('back').onclick=()=>{ if(cur>0){cur--;render();} };
-  $('redo').onclick=()=>{ build(); show(['quiz']); render(); window.scrollTo({top:0}); };
   $('share').onclick=async()=>{
     const text=`我在「學測單字量測驗」大約認得 ${lastTotal.toLocaleString()} 個學測單字，你呢？`;
     const url='https://yushanlabs.github.io/vocab/';
