@@ -165,7 +165,12 @@ details.appendix[open] summary::after{content:"收起"}
 @media (max-width:480px){.appcta .btn{width:100%}}
 footer{font-size:12px;color:var(--pencil);text-align:center;font-family:var(--ui)}
 footer a{color:inherit}
-.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--sheet);
+.modal{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;
+  padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.modalin{max-width:420px;width:100%;max-height:100%;overflow:auto;align-items:center}
+.modalin img{width:100%;height:auto;border:1px solid var(--rule);display:block}
+.modalin .hint{font-size:13px;text-align:center}
+.toast{z-index:30;position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--sheet);
   padding:8px 16px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;font-family:var(--ui)}
 .toast.on{opacity:1}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
@@ -310,6 +315,18 @@ footer a{color:inherit}
 
   <footer><a href="../daily/">學測詞彙每日 10 題</a>・<a href="../">Yushan Labs</a></footer>
 </div>
+<div class="modal" id="shareBox" hidden role="dialog" aria-label="分享成績小卡">
+  <div class="modalin sheet">
+    <img id="cardImg" alt="成績小卡">
+    <p class="muted hint">長按圖片可以儲存；或用下面的按鈕分享。</p>
+    <div class="row">
+      <button class="btn solid" id="shareImg">分享圖片</button>
+      <a class="btn" id="saveImg" download="學測單字量測驗.png">儲存圖片</a>
+      <button class="btn" id="copyLink">複製連結</button>
+    </div>
+    <button class="link" id="closeShare">關閉</button>
+  </div>
+</div>
 <div class="toast" id="toast"></div>
 <script>
 (function(){
@@ -406,6 +423,7 @@ footer a{color:inherit}
     const T=TIERS[t];
     $('tier').textContent=T.name; $('tierNo').textContent=`第 ${t+1} 階／共 ${TIERS.length} 階`;
     $('evalText').textContent=T.text;
+    last={tier:T.name,tierNo:`第 ${t+1} 階／共 ${TIERS.length} 階`,per,range:`95% 信賴區間 ${lo.toLocaleString()}–${hi.toLocaleString()} 字・作答 ${rounds*60} 題`};
     // 建議（依各級作答）
     const tips=[];
     const focus=per.find(x=>x.p<0.8);
@@ -440,12 +458,79 @@ footer a{color:inherit}
   $('more').onclick=begin;
   $('restart').onclick=()=>{ reset(); begin(); };
   $('back').onclick=()=>{ if(cur>0){cur--;render();} };
+  const URL_='https://yushanlabs.github.io/vocab/';
+  const shareText=()=>`我在「學測單字量測驗」估計認得 ${lastTotal.toLocaleString()} 個學測單字（${last.tier}），你呢？`;
+  let last={}, cardBlob=null;
+  async function drawShareCard(){
+    const W=1080,H=1350, c=document.createElement('canvas'); c.width=W; c.height=H;
+    const g=c.getContext('2d');
+    const ZH='"Noto Serif TC","Songti TC","PMingLiU",serif', EN='"Tinos","Times New Roman",Times,serif';
+    const INK='#18191B', PEN='#55585E', RULE='#C9CAC4', RED='#C22F2F', CARD='#D2564A';
+    const texts=['學測英文・詞彙','單字量測驗卷','成績通知單','估計單字量','個學測單字','等級','95% 信賴區間','第級甲乙丙階共','測測你的學測單字量','記憶曲線單字 App','字',last.tier,last.range];
+    try{ await Promise.all([document.fonts.load(`900 64px ${ZH}`,texts.join('')),document.fonts.load(`400 32px ${ZH}`,texts.join('')),document.fonts.load(`700 200px ${EN}`,'0123456789,')]); }catch(e){}
+    g.fillStyle='#F6F6F2'; g.fillRect(0,0,W,H);
+    g.fillStyle='#FFFFFF'; g.fillRect(56,56,W-112,H-112); g.strokeStyle=RULE; g.lineWidth=2; g.strokeRect(56,56,W-112,H-112);
+    const center=(t,y,font,color)=>{g.font=font;g.fillStyle=color;g.textAlign='center';g.fillText(t,W/2,y);};
+    center('學測英文・詞彙　單字量測驗卷',140,`400 32px ${ZH}`,PEN);
+    center('成 績 通 知 單',225,`900 68px ${ZH}`,INK);
+    g.strokeStyle=INK; g.lineWidth=3; [258,268].forEach(y=>{g.beginPath();g.moveTo(110,y);g.lineTo(W-110,y);g.stroke();});
+    center('估計單字量',322,`400 36px ${ZH}`,PEN);
+    const num=lastTotal.toLocaleString();
+    g.font=`700 210px ${EN}`; const nw=g.measureText(num).width;
+    center(num,545,`700 210px ${EN}`,RED);
+    // 紅筆圈
+    g.save(); g.translate(W/2,475); g.rotate(-0.04); g.strokeStyle=RED; g.lineWidth=7; g.lineCap='round';
+    const rx=nw/2+70, ry=118; g.beginPath();
+    for(let a=-0.35;a<=Math.PI*2+0.25;a+=0.05){ const k=1+0.035*Math.sin(a*3); const x=Math.cos(a)*rx*k, y=Math.sin(a)*ry*k; a===-0.35?g.moveTo(x,y):g.lineTo(x,y); }
+    g.stroke(); g.restore();
+    center('個學測單字',660,`600 46px ${ZH}`,INK);
+    center(last.range,720,`400 32px ${ZH}`,PEN);
+    // 等級
+    g.textAlign='left'; g.font=`900 60px ${ZH}`; const tw=g.measureText(last.tier).width;
+    g.font=`400 30px ${ZH}`; const lw=g.measureText('等級').width+28, sw=g.measureText(last.tierNo).width;
+    let x=(W-(lw+24+tw+24+sw))/2; const ty=818;
+    g.strokeStyle=PEN; g.lineWidth=2; g.strokeRect(x,ty-36,lw,48); g.fillStyle=PEN; g.fillText('等級',x+14,ty);
+    x+=lw+24; g.font=`900 60px ${ZH}`; g.fillStyle=RED; g.fillText(last.tier,x,ty+8);
+    x+=tw+24; g.font=`400 30px ${ZH}`; g.fillStyle=PEN; g.fillText(last.tierNo,x,ty);
+    // 各級
+    const top=862, rh=50, L=150, R=W-150;
+    g.strokeStyle=INK; g.lineWidth=2;
+    last.per.forEach((p,i)=>{
+      const y=top+i*rh, mid=y+rh/2+11;
+      g.beginPath(); g.moveTo(L,y); g.lineTo(R,y); g.stroke();
+      g.textAlign='left'; g.font=`400 32px ${ZH}`; g.fillStyle=INK; g.fillText(`第 ${p.l} 級`,L+10,mid);
+      const bx=L+170, bw=380, by=y+rh/2-9;
+      g.fillStyle='#F6F6F2'; g.fillRect(bx,by,bw,18); g.strokeStyle=RULE; g.lineWidth=1.5; g.strokeRect(bx,by,bw,18);
+      g.fillStyle=p.p<0.5?RED:INK; g.fillRect(bx,by,bw*p.p,18);
+      g.textAlign='right'; g.font=`400 30px ${EN}`; g.fillStyle=INK; g.fillText(Math.round(p.p*100)+'%',bx+bw+110,mid);
+      const gr=p.p>=0.8?'甲':p.p>=0.5?'乙':'丙';
+      g.textAlign='center'; g.font=`900 36px ${ZH}`; g.fillStyle=gr==='丙'?RED:INK; g.fillText(gr,R-40,mid);
+      g.strokeStyle=INK; g.lineWidth=2;
+    });
+    g.beginPath(); g.moveTo(L,top+6*rh); g.lineTo(R,top+6*rh); g.stroke();
+    // 頁尾
+    g.setLineDash([10,10]); g.strokeStyle=RULE; g.lineWidth=2; g.beginPath(); g.moveTo(110,1188); g.lineTo(W-110,1188); g.stroke(); g.setLineDash([]);
+    g.textAlign='left'; g.font=`600 32px ${ZH}`; g.fillStyle=INK; const a='測測你的學測單字量：'; g.fillText(a,110,1234);
+    const aw=g.measureText(a).width; g.font=`700 32px ${EN}`; g.fillStyle=RED; g.fillText('yushanlabs.github.io/vocab',110+aw,1234);
+    g.font=`400 26px ${ZH}`; g.fillStyle=PEN; g.fillText('記憶曲線單字 App・FSRS 背單字',110,1272);
+    return c;
+  }
   $('share').onclick=async()=>{
-    const text=`我在「學測單字量測驗」估計認得 ${lastTotal.toLocaleString()} 個學測單字，你呢？`;
-    const url='https://yushanlabs.github.io/vocab/';
-    try{ if(navigator.share){ await navigator.share({title:'學測單字量測驗',text,url}); return; } }catch(e){ if(e.name==='AbortError') return; }
-    try{ await navigator.clipboard.writeText(text+' '+url); toast('已複製，可以貼給朋友'); }catch(e){ toast(url); }
+    const c=await drawShareCard();
+    cardBlob=await new Promise(r=>c.toBlob(r,'image/png'));
+    const u=window.URL.createObjectURL(cardBlob);
+    $('cardImg').src=u; $('saveImg').href=u;
+    const f=new File([cardBlob],'學測單字量測驗.png',{type:'image/png'});
+    $('shareImg').hidden=!(navigator.canShare&&navigator.canShare({files:[f]}));
+    $('shareBox').hidden=false;
   };
+  $('shareImg').onclick=async()=>{
+    const f=new File([cardBlob],'學測單字量測驗.png',{type:'image/png'});
+    try{ await navigator.share({files:[f],text:shareText()+' '+URL_}); }catch(e){ if(e.name!=='AbortError') toast('無法分享，請長按圖片儲存'); }
+  };
+  $('copyLink').onclick=async()=>{ try{ await navigator.clipboard.writeText(shareText()+' '+URL_); toast('已複製，可以貼給朋友'); }catch(e){ toast(URL_); } };
+  $('closeShare').onclick=()=>{ $('shareBox').hidden=true; };
+  $('shareBox').onclick=e=>{ if(e.target===$('shareBox')) $('shareBox').hidden=true; };
   document.addEventListener('keydown',e=>{
     if($('quiz').hidden) return;
     const k=e.key.toLowerCase(), q=qs[cur]; if(!q) return;
