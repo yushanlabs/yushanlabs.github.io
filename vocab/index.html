@@ -58,6 +58,9 @@ button:focus-visible,a:focus-visible,summary:focus-visible{outline:2px solid var
 .btn{border:0;border-radius:999px;padding:12px 26px;font-weight:600;font-size:16px;text-decoration:none;display:inline-block;text-align:center}
 .btn.main{background:var(--accent);color:var(--on-accent)}
 .btn.ghost{background:transparent;border:1px solid var(--line)}
+header{display:flex;flex-direction:column;gap:8px}
+.intro{display:flex;flex-direction:column;gap:8px;max-width:38em;margin-top:6px}
+.intro p:first-child{font-family:var(--display);font-size:18px;font-weight:700}
 .lead{font-family:var(--display);font-size:20px;font-weight:700;line-height:1.4;text-wrap:balance}
 .math{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px 16px;display:flex;flex-direction:column;gap:6px;font-variant-numeric:tabular-nums;font-size:15px}
 .math .t{font-weight:700;color:var(--accent)}
@@ -135,6 +138,11 @@ footer a{color:inherit}
   <header>
     <p class="eyebrow">YUSHAN LABS・學測英文</p>
     <h1>學測單字量測驗</h1>
+    <div class="intro">
+      <p>背單字最大的問題，是不知道自己現在在哪裡。</p>
+      <p>學測英文的單字範圍是大考中心《高中英文參考詞彙表》：6,136 個字，分成 6 級。我們整理了 83 到 115 年的歷屆學測詞彙題，新課綱（111 年起）的正解有 88% 落在第 3 到 5 級。與其拿起單字書從 A 背起，不如先知道每一級你已經認得多少，把時間花在還不熟的那一級。</p>
+      <p>這個測驗用統計抽樣，60 題、5 分鐘，算出你的單字量、誤差範圍和各級熟練度。</p>
+    </div>
   </header>
 
   <!-- 開始 -->
