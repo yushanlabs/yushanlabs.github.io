@@ -120,6 +120,15 @@ details.how[open] summary::after{content:"－"}
 .missed span{border:1px solid var(--line);border-radius:999px;padding:3px 12px;font-size:14px;background:var(--bg)}
 .missed span b{font-family:var(--latin);font-weight:600;margin-right:6px}
 .missed span i{font-style:normal}
+.apphead{display:flex;gap:14px;align-items:center}
+.apphead img{width:64px;height:64px;border-radius:15px;flex:none}
+.apphead h2{font-size:20px}
+.feat{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px}
+.feat li{display:flex;flex-direction:column;gap:2px;padding-left:14px;border-left:3px solid var(--accent-soft)}
+.feat b{font-size:15px}
+.feat span{font-size:14px;color:var(--muted)}
+.appcta{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+@media (max-width:480px){.appcta .btn{width:100%}}
 .promo{display:flex;gap:14px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px}
 .promo img{width:60px;height:60px;border-radius:14px;flex:none}
 .promo .t{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
@@ -242,10 +251,23 @@ footer a{color:inherit}
     </div>
   </details>
 
-  <section class="promo">
-    <img src="../assets/icons/gept.png" alt="">
-    <div class="t"><b>記憶曲線單字</b><span>收錄學測詞彙表 98% 的字，FSRS 會在你快忘記的時候把字丟回來考你。每一級都可以先免費試 200 個字。</span></div>
-    <a class="btn main" href="https://apps.apple.com/tw/app/id6821861109">App Store</a>
+  <section class="app card" id="app">
+    <div class="apphead">
+      <img src="../assets/icons/gept.png" alt="記憶曲線單字 App 圖示">
+      <div><p class="eyebrow">測完之後</p><h2>用「記憶曲線單字」把字留下來</h2></div>
+    </div>
+    <p>知道該主攻哪一級之後，下一步是記住。記憶曲線單字是我們做的 iPhone／iPad 背單字 App，收錄全民英檢初級、中級、中高級約 7,800 字，涵蓋學測詞彙表 98% 的字。學測第 1–2 級大多在初級，第 3–4 級大多在中級，第 5–6 級大多在中高級。</p>
+    <ul class="feat">
+      <li><b>快忘的時候才考你</b><span>用 FSRS 記憶模型估計每個字還記得的機率，在快要忘記時排進複習。記得牢的字不會一直出現，時間都花在快忘的字上。</span></li>
+      <li><b>認得和會拼分開記</b><span>英翻中和拼字是兩條獨立的記憶曲線。看得懂但拼不出來的字，會在拼字練習裡繼續出現。</span></li>
+      <li><b>答錯馬上再考</b><span>答錯的字會在同一回合再出現，直到答對；之後隔天、幾天後、幾週後再確認，間隔一次比一次長。</span></li>
+      <li><b>每個字都有例句和用法</b><span>美式發音、例句、中文翻譯和易混淆字說明，翻面就看得到。</span></li>
+      <li><b>離線、免帳號、不收集資料</b><span>不用註冊，沒有訂閱，學習紀錄只存在你的手機。</span></li>
+    </ul>
+    <div class="appcta">
+      <a class="btn main" href="https://apps.apple.com/tw/app/id6821861109">在 App Store 下載</a>
+      <span class="muted">每一級都可以先免費試 200 個字</span>
+    </div>
   </section>
 
   <footer><a href="../daily/">學測詞彙每日 10 題</a>・<a href="../">Yushan Labs</a></footer>
